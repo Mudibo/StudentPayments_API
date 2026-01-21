@@ -1,3 +1,5 @@
+
+using Microsoft.EntityFrameworkCore;
 DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); //Inform ASP.NET Core to use connection string and PostgreSQL provider for the DbContext
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
