@@ -1,5 +1,13 @@
-
+using Npgsql;
+using StudentPayments_API.Models;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using StudentPayments_API.Data;
+// Register the enum mapping globally for Npgsql
+
+
+
 
 foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
 {
@@ -14,11 +22,40 @@ Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnec
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddControllers();
+
+builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions => npgsqlOptions.MapEnum<StudentPayments_API.Models.ProgramEnum>()
+    )
+);
 
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); //Inform ASP.NET Core to use connection string and PostgreSQL provider for the DbContext
+
+var secret = "a-string-secret-at-least-256-bits-long"; //Testing secret
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+            ValidateLifetime = false //disable expiration for testing
+        };
+    });
+builder.Services.AddAuthorization();
+
+//Register the student validation service
+builder.Services.AddScoped<StudentPayments_API.Services.Interfaces.IStudentValidationService, StudentPayments_API.Services.Implementations.StudentValidationService>();
 var app = builder.Build();
 
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
