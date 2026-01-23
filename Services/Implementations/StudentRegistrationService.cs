@@ -3,6 +3,7 @@ using StudentPayments_API.Models;
 using StudentPayments_API.Data;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Services.Interfaces;
+using BCrypt.Net;
 
 namespace StudentPayments_API.Services.Implementations;
 
@@ -60,6 +61,9 @@ public class StudentRegistrationService : IStudentRegistrationService
             if(!TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum))
                 return (false, "Invalid enrollment status value.", null);
 
+            //Hash the password before storing in the database
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+           
             var student = new Student 
             {
                 AdmissionNumber = dto.AdmissionNumber,
@@ -71,7 +75,8 @@ public class StudentRegistrationService : IStudentRegistrationService
                 EnrollmentStatus = enrollmentStatusEnum,
                 ExternalID = dto.ExternalID,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                PasswordHash = passwordHash
             };
 
             _context.Students.Add(student);

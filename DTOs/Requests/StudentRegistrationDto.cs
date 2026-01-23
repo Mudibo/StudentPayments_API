@@ -12,4 +12,5 @@ public class StudentRegistrationDto
     public string Program {get; set;}
     public string EnrollmentStatus {get; set;}
     public string? ExternalID {get; set;}
+    public string Password {get; set;}
 }
