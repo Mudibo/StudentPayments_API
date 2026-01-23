@@ -1,5 +1,6 @@
 namespace StudentPayments_API.Models;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 //Class that represents a student in the system and maps directly to the students table in the database
 //Each property represents a column in the database table
@@ -39,4 +40,8 @@ public class Student
 
     [Column("updated_at")]
     public DateTime UpdatedAt {get; set;}
+    
+    [JsonIgnore]
+    [Column("password_hash")]
+    public string PasswordHash {get; set;}
 }
