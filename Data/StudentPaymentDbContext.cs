@@ -17,6 +17,7 @@ public class StudentPaymentsDbContext : DbContext
     {
         // Register the PostgreSQL enum for correct mapping
         modelBuilder.HasPostgresEnum<StudentPayments_API.Models.ProgramEnum>();
+        modelBuilder.HasPostgresEnum<StudentPayments_API.Models.EnrollmentStatusEnum>("enrollment_enum");
     }
     
 }

@@ -29,7 +29,7 @@ public class Student
     public ProgramEnum Program {get; set;}
 
     [Column("enrollment_status")]
-    public string EnrollmentStatus {get; set;}
+    public EnrollmentStatusEnum EnrollmentStatus { get; set; }
 
     [Column("external_student_id")]
     public string? ExternalID { get; set; }

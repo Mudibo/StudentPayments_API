@@ -4,6 +4,8 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StudentPayments_API.Data;
+using StudentPayments_API.Services.Interfaces;
+using StudentPayments_API.Services.Implementations;
 // Register the enum mapping globally for Npgsql
 
 
@@ -23,16 +25,17 @@ Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnec
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddScoped<IStudentRegistrationService, StudentRegistrationService>();
 
+// Register both enums for Npgsql mapping
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsqlOptions => npgsqlOptions.MapEnum<StudentPayments_API.Models.ProgramEnum>()
+        npgsqlOptions => npgsqlOptions
+            .MapEnum<StudentPayments_API.Models.ProgramEnum>()
+            .MapEnum<StudentPayments_API.Models.EnrollmentStatusEnum>("enrollment_enum")
     )
 );
-
-builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); //Inform ASP.NET Core to use connection string and PostgreSQL provider for the DbContext
 
 var secret = "a-string-secret-at-least-256-bits-long"; //Testing secret
 builder.Services.AddAuthentication("Bearer")
