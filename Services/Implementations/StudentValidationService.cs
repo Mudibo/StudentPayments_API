@@ -60,7 +60,7 @@ public class StudentValidationService : IStudentValidationService
             s.AdmissionNumber == admissionNumber &&
             s.Program == programEnum &&
             s.MobileNumber == mobileNumber &&
-            s.EnrollmentStatus == "Active");
+            s.EnrollmentStatus == EnrollmentStatusEnum.Active);
         //If student not found, returns false and a message
         if (student == null)
             return (false, null, "Student not found or not active");
