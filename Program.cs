@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using StudentPayments_API.Data;
 using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.Services.Implementations;
+using StudentPayments_API.Security.Interfaces;
+using StudentPayments_API.Security.Implementations;
 // Register the enum mapping globally for Npgsql
 
 
@@ -24,6 +26,7 @@ Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnec
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
