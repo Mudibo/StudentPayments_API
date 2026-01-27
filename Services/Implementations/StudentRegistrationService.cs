@@ -50,7 +50,7 @@ public class StudentRegistrationService : IStudentRegistrationService
     public async Task<(bool success, string message, Student? student)> RegisterStudentAsync(StudentRegistrationDto dto){
         try {
             //Check for duplicate admission number
-            if(await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber))
+            if(await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim()))
                 return (false, "A student with the same admission number already exists", null);
             
             //Validate and parse Program enum
@@ -61,16 +61,17 @@ public class StudentRegistrationService : IStudentRegistrationService
             if(!TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum))
                 return (false, "Invalid enrollment status value.", null);
 
+            var trimmedPassword = dto.Password.Trim();
             //Hash the password before storing in the database
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(trimmedPassword);
            
             var student = new Student 
             {
-                AdmissionNumber = dto.AdmissionNumber,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Email = dto.Email,
-                MobileNumber = dto.MobileNumber,
+                AdmissionNumber = dto.AdmissionNumber.Trim(),
+                FirstName = dto.FirstName.Trim(),
+                LastName = dto.LastName.Trim(),
+                Email = dto.Email.Trim(),
+                MobileNumber = dto.MobileNumber.Trim(),
                 Program = programEnum,
                 EnrollmentStatus = enrollmentStatusEnum,
                 ExternalID = dto.ExternalID,
