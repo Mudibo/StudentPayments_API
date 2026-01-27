@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using StudentPayments_API.Models;
+using StudentPayments_API.Security.Interfaces;
 
 namespace StudentPayments_API.Controllers;
 
@@ -15,12 +16,12 @@ namespace StudentPayments_API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly StudentPaymentsDbContext _context; //Hold a reference to the db
-    private readonly IConfiguration _config;
+    private readonly ITokenService _tokenService;
 
-    public AuthController(StudentPaymentsDbContext context, IConfiguration config)
+    public AuthController(StudentPaymentsDbContext context, ITokenService tokenService)
     {
         _context = context; //Inject the database context
-        _config = config; //Inject the configuration system which are saved in the private fields
+        _tokenService = tokenService; //Inject the configuration system which are saved in the private fields
     }
     [HttpPost("login")] //Define a POST endpoint (/api/Auth/login)
     public async Task<ActionResult> Login([FromBody] LoginDto dto)
@@ -47,28 +48,7 @@ public class AuthController : ControllerBase
                 message = "Invalid Credentials."
             });
         }
-
-        //Generate JWT token
-        var tokenHandler = new JwtSecurityTokenHandler(); //Create JWT
-        var key = Encoding.UTF8.GetBytes(_config["Jwt:Secret"]);
-        var expires = DateTime.UtcNow.AddMinutes(30); //Token expiration time
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim("admissionNumber", student.AdmissionNumber),
-                new Claim("program", student.Program.ToString()),
-                new Claim("mobileNumber", student.MobileNumber)
-            }),
-            Expires = expires,
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-        var token = tokenHandler.CreateToken(tokenDescriptor); //Create the token
-
-        return Ok(new
-        {
-            token = tokenHandler.WriteToken(token),
-            expiration = expires
-        });
+        var tokenResponse = _tokenService.GenerateToken(student);
+        return Ok(tokenResponse);
     }
 }
