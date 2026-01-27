@@ -27,12 +27,31 @@ public class StudentRegistrationController : ControllerBase
         var (success, message, student) = await _registrationService.RegisterStudentAsync(dto);
         if (!success)
         {
-            //If registration fails, return 400 bad request
-            return BadRequest(new
+            if(message.Contains("A student with the same admission number already exists",StringComparison.OrdinalIgnoreCase))
             {
-                message
-            });
+                //Return a 409 Conflict response if duplicate admission number
+                return Conflict(new
+                {
+                    message
+                });
+            }else if (message.Contains("Invalid", StringComparison.OrdinalIgnoreCase))
+            {
+                //Return 400 Bad Request for validation errors
+                return BadRequest(new
+                {
+                    message
+                });
+            }
+            else
+            {
+                //Return 500 Internal Server Error for unexpected issues
+                return StatusCode(500, new
+                {
+                    message
+                });
+            }
         }
+        //If registration is successful, return 200 OK with student details
         return Ok(new
         {
             //If registration succeeds, return 200 ok with student details

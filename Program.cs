@@ -24,7 +24,9 @@ Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnec
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddScoped<IStudentRegistrationService, StudentRegistrationService>();
 
 // Register both enums for Npgsql mapping
@@ -32,12 +34,12 @@ builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         npgsqlOptions => npgsqlOptions
-            .MapEnum<StudentPayments_API.Models.ProgramEnum>()
-            .MapEnum<StudentPayments_API.Models.EnrollmentStatusEnum>("enrollment_enum")
+            .MapEnum<ProgramEnum>()
+            .MapEnum<EnrollmentStatusEnum>("enrollment_enum")
     )
 );
 
-var secret = "a-string-secret-at-least-256-bits-long"; //Testing secret
+var secret = builder.Configuration["Jwt:Secret"];
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
