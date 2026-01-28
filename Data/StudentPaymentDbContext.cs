@@ -12,12 +12,15 @@ public class StudentPaymentsDbContext : DbContext
     : base(options) {}
     
     public DbSet<Student> Students { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Register the PostgreSQL enum for correct mapping
-        modelBuilder.HasPostgresEnum<StudentPayments_API.Models.ProgramEnum>();
-        modelBuilder.HasPostgresEnum<StudentPayments_API.Models.EnrollmentStatusEnum>("enrollment_enum");
+        modelBuilder.HasPostgresEnum<ProgramEnum>();
+        modelBuilder.HasPostgresEnum<EnrollmentStatusEnum>("enrollment_enum");
+        modelBuilder.HasPostgresEnum<PaymentTypeEnum>("payment_type_enum");
+        modelBuilder.HasPostgresEnum<PaymentChannelEnum>("payment_channel_enum");
+        modelBuilder.Entity<Payment>();
     }
-    
 }

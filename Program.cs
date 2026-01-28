@@ -31,7 +31,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddScoped<IStudentRegistrationService, StudentRegistrationService>();
-
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 // Register both enums for Npgsql mapping
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
     options.UseNpgsql(
@@ -39,6 +39,8 @@ builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
         npgsqlOptions => npgsqlOptions
             .MapEnum<ProgramEnum>()
             .MapEnum<EnrollmentStatusEnum>("enrollment_enum")
+            .MapEnum<PaymentTypeEnum>("payment_type_enum")
+            .MapEnum<PaymentChannelEnum>("payment_channel_enum")
     )
 );
 
