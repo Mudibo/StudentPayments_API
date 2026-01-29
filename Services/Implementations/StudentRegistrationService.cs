@@ -51,16 +51,22 @@ public class StudentRegistrationService : IStudentRegistrationService
         try {
             //Check for duplicate admission number
             if(await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim()))
+            {
+                _logger.LogWarning("Attempted to register duplicate student with admission number: {admissionNumber}", dto.AdmissionNumber.Trim());
                 return (false, "A student with the same admission number already exists", null);
-            
+            }
             //Validate and parse Program enum
             if (!TryParseEnumMember<ProgramEnum>(dto.Program, out var programEnum))
+            {
+                _logger.LogWarning("Invalid program value: {program} for AdmissionNumber: {AdmissionNumber}", dto.Program, dto.AdmissionNumber.Trim());
                 return (false, "Invalid program value.", null);
-
+            }
             //Validate and parse EnrollmentStatus enum
             if(!TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum))
+            {
+                _logger.LogWarning("Invalid enrollment status value: {enrollmentStatus} for AdmissionNumber: {AdmissionNumber}", dto.EnrollmentStatus, dto.AdmissionNumber.Trim());
                 return (false, "Invalid enrollment status value.", null);
-
+            }
             var trimmedPassword = dto.Password.Trim();
             //Hash the password before storing in the database
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(trimmedPassword);
@@ -82,7 +88,8 @@ public class StudentRegistrationService : IStudentRegistrationService
 
             _context.Students.Add(student);
             await _context.SaveChangesAsync();
-
+            
+            _logger.LogInformation("Student registered successfully with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber.Trim());
             return (true, "Student Registered Successfully", student);
 
         } catch (DbUpdateException dbEx) {
