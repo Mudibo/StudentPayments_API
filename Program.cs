@@ -8,6 +8,7 @@ using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.Services.Implementations;
 using StudentPayments_API.Security.Interfaces;
 using StudentPayments_API.Security.Implementations;
+using Serilog;
 // Register the enum mapping globally for Npgsql
 
 
@@ -18,7 +19,14 @@ foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVari
     Console.WriteLine($"{de.Key} = {de.Value}");
 }
 
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 // Print the connection string for debugging
 Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));

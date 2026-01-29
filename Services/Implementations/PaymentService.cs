@@ -9,40 +9,56 @@ namespace StudentPayments_API.Services.Implementations;
 public class PaymentService : IPaymentService
 {
     private readonly StudentPaymentsDbContext _context;
-    public PaymentService(StudentPaymentsDbContext context)
+    private readonly ILogger<PaymentService> _logger;
+    public PaymentService(StudentPaymentsDbContext context, ILogger<PaymentService> logger)
     {
         _context = context;
+        _logger = logger;
     }
     public async Task<(bool success, string message)> RegisterPaymentAsync(PaymentDto dto)
     {
-        var student = await _context.Students.FirstOrDefaultAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim());
-        if(student == null)
+        try
         {
-            return (false, "Student not registered");
-        }
-        if (!TryParseEnumMember<PaymentTypeEnum>(dto.PaymentType, out var paymentType))
-            return (false, "Invalid payment type.");
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim());
+            if(student == null)
+            {
+                _logger.LogWarning("Attempted to register payment for unregistered student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber.Trim());
+                return (false, "Student not registered");
+            }
+            if (!TryParseEnumMember<PaymentTypeEnum>(dto.PaymentType, out var paymentType))
+            {
+                _logger.LogWarning("Invalid Payment Type: {paymentType} for AdmissionNumber: {AdmissionNumber}", dto.PaymentType, dto.AdmissionNumber.Trim());
+                return (false, "Invalid payment type.");
+            }
+            if (!TryParseEnumMember<PaymentChannelEnum>(dto.PaymentChannel, out var paymentChannel)){
+                _logger.LogWarning("Invalid Payment Channel: {paymentChannel} for AdmissionNumber: {AdmissionNumber}", dto.PaymentChannel, dto.AdmissionNumber.Trim());
+                return (false, "Invalid payment channel.");
+            }
+            var payment = new Payment
+            {
+                ReferenceNumber = dto.ReferenceNumber.Trim(),
+                PaymentDateTime = dto.PaymentDateTime,
+                PaymentType = paymentType,
+                PaymentChannel = paymentChannel,
+                StudentId = student.StudentId,
+                AdmissionNumber = student.AdmissionNumber,
+                Amount = dto.Amount,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
 
-        if (!TryParseEnumMember<PaymentChannelEnum>(dto.PaymentChannel, out var paymentChannel))
-            return (false, "Invalid payment channel.");
-
-        var payment = new Payment
+            _logger.LogInformation("Payment registered successfully for AdmissionNumber: {AdmissionNumber}, ReferenceNumber: {ReferenceNumber}", dto.AdmissionNumber, dto.ReferenceNumber.Trim());
+            return (true, "Payment registered successfully.");
+        }catch(DbUpdateException dbEx){
+            _logger.LogError(dbEx, "Database error occurred while registering payment for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+            return (false, "A database error occurred while registering the payment");
+        }catch(Exception ex)
         {
-            ReferenceNumber = dto.ReferenceNumber.Trim(),
-            PaymentDateTime = dto.PaymentDateTime,
-            PaymentType = paymentType,
-            PaymentChannel = paymentChannel,
-            StudentId = student.StudentId,
-            AdmissionNumber = student.AdmissionNumber,
-            Amount = dto.Amount,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Payments.Add(payment);
-        await _context.SaveChangesAsync();
-
-        return (true, "Payment registered successfully.");
+            _logger.LogError(ex, "An unexpected error occurred while registering payment for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+            return (false, "An unexpected error occurred while registering the payment.");
+        }  
     }
 
     // Generic method to parse enums using PgName or name

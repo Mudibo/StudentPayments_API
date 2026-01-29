@@ -1,5 +1,5 @@
 namespace StudentPayments_API.DTOs.Requests;
-
+//Shapes the data the outside world sends to the API when regsitering a payment
 public class PaymentDto
 {
     public string ReferenceNumber {get;set;}

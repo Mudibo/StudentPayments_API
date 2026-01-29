@@ -4,13 +4,13 @@ using StudentPayments_API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 namespace StudentPayments_API.Controllers;
 
-[Authorize]
-[ApiController]
-[Route("api/[controller]")]
+[Authorize] //Requires an authenticated user to access the endpoints in this controller
+[ApiController] 
+[Route("api/[controller]")] //Defines the base route
 
 public class PaymentsController : ControllerBase
 {
-    private readonly IPaymentService _paymentService;
+    private readonly IPaymentService _paymentService; //Private field to hold the payment service
     public PaymentsController(IPaymentService paymentService)
     {
         _paymentService = paymentService;
