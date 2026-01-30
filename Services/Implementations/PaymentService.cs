@@ -60,6 +60,17 @@ public class PaymentService : IPaymentService
             return (false, "An unexpected error occurred while registering the payment.");
         }  
     }
+    public async Task<List<Payment>> GetPaymentsForStudentAsync(int studentId)
+    {
+        return await _context.Payments.Where(p => p.StudentId == studentId).ToListAsync();
+    }
+
+    public async Task<List<Payment>> GetPaymentForStudentAsync(int studentId)
+    {
+        return await _context.Payments
+            .Where(p => p.StudentId == studentId)
+            .ToListAsync();
+    }
 
     // Generic method to parse enums using PgName or name
     private static bool TryParseEnumMember<TEnum>(string value, out TEnum result) where TEnum : struct
