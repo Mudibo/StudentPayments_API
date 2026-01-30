@@ -24,6 +24,7 @@ public class TokenService : ITokenService
 
         var claims = new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, student.StudentId.ToString()),
             new Claim("admissionNumber", student.AdmissionNumber),
             new Claim("program", student.Program.ToString()),
             new Claim("mobileNumber", student.MobileNumber)
