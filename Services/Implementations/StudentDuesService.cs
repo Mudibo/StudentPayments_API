@@ -12,13 +12,17 @@ namespace StudentPayments_API.Services.Implementations;
 public class StudentDuesService : IStudentDuesService
 {
     private readonly StudentPaymentsDbContext _context;
-    public StudentDuesService(StudentPaymentsDbContext context)
+    private readonly ILogger<StudentDuesService> _logger;
+    public StudentDuesService(StudentPaymentsDbContext context, ILogger<StudentDuesService> logger)
     {
         _context = context;
+        _logger = logger;
     }
     public async Task<AddStudentDuesResponseDto<StudentDues>> AddDuesAsync(AddStudentDuesDto dto)
     {
-        var response = new AddStudentDuesResponseDto<StudentDues>();
+        try
+        {
+            var response = new AddStudentDuesResponseDto<StudentDues>();
         var student = await _context.Students.FirstOrDefaultAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim());
         if(student == null)
         {
@@ -43,5 +47,22 @@ public class StudentDuesService : IStudentDuesService
         response.Message = "Student dues added successfully.";
         response.Data = dues;
         return response;
+        }catch(DbUpdateException dbEx)
+        {
+            var response = new AddStudentDuesResponseDto<StudentDues>();
+            response.Success = false;
+            response.Message = "A database error occurred while adding student dues.";
+            response.Data = null;
+            _logger.LogError(dbEx, "Database error occurred while adding dues for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+            return response;
+        }catch(Exception ex)
+        {
+            var response = new AddStudentDuesResponseDto<StudentDues>();
+            response.Success = false;
+            response.Message = "An unexpected error occurred while adding student dues.";
+            response.Data = null;
+            _logger.LogError(ex, "An unexpected error occurred while adding dues for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+            return response;
+        }
     }
 }
