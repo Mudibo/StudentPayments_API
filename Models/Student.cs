@@ -44,4 +44,9 @@ public class Student
     [JsonIgnore]
     [Column("password_hash")]
     public string PasswordHash {get; set;}
+
+    [Column("role")]
+    public string Role { get; set; }
+
+    public ICollection<StudentDues> StudentDues {get; set;}
 }
