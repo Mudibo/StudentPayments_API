@@ -65,4 +65,16 @@ public class StudentDuesService : IStudentDuesService
             return response;
         }
     }
+    public async Task<decimal> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto)
+    {
+        var totalDues = await _context.StudentDues
+            .Where(d => d.StudentId == dto.StudentId)
+            .SumAsync(d => d.DuesAmount);
+
+        var totalPaid = await _context.Payments
+            .Where(p => p.StudentId == dto.StudentId)
+            .SumAsync(p => p.Amount);
+
+        return totalDues - totalPaid;
+    }
 }
