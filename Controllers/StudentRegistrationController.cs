@@ -27,7 +27,7 @@ public class StudentRegistrationController : ControllerBase
         var (success, message, student) = await _registrationService.RegisterStudentAsync(dto);
         if (!success)
         {
-            if(message.Contains("A student with the same admission number already exists",StringComparison.OrdinalIgnoreCase))
+            if(message.ToLowerInvariant().Contains("admission number already exists",StringComparison.OrdinalIgnoreCase))
             {
                 //Return a 409 Conflict response if duplicate admission number
                 return Conflict(new

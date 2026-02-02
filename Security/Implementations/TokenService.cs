@@ -27,7 +27,8 @@ public class TokenService : ITokenService
             new Claim(ClaimTypes.NameIdentifier, student.StudentId.ToString()),
             new Claim("admissionNumber", student.AdmissionNumber),
             new Claim("program", student.Program.ToString()),
-            new Claim("mobileNumber", student.MobileNumber)
+            new Claim("mobileNumber", student.MobileNumber),
+            new Claim(ClaimTypes.Role, student.Role)
         };
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -43,7 +44,8 @@ public class TokenService : ITokenService
         return new TokenResponseDto
         {
             Token = tokenHandler.WriteToken(token),
-            Expiration = expires                        
+            Expiration = expires    ,
+            Role = student.Role                    
         };
     }
 }

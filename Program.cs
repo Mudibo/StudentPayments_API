@@ -28,12 +28,17 @@ Log.Logger = new LoggerConfiguration()
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
 // Print the connection string for debugging
 Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IStudentDuesService, StudentDuesService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

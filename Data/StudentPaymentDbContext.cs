@@ -13,7 +13,7 @@ public class StudentPaymentsDbContext : DbContext
     
     public DbSet<Student> Students { get; set; } //DbSet<t> represents a table in the database
     public DbSet<Payment> Payments { get; set; } //DbSet<t> represents a table in the database
-
+    public DbSet<StudentDues> StudentDues { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Register the PostgreSQL enum for correct mapping

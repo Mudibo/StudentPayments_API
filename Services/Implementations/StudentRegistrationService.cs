@@ -83,7 +83,8 @@ public class StudentRegistrationService : IStudentRegistrationService
                 ExternalID = dto.ExternalID,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                PasswordHash = passwordHash
+                PasswordHash = passwordHash,
+                Role = "Student"
             };
 
             _context.Students.Add(student);
@@ -94,6 +95,11 @@ public class StudentRegistrationService : IStudentRegistrationService
 
         } catch (DbUpdateException dbEx) {
             _logger.LogError(dbEx, "A database error occurred while registering the student");
+            if(dbEx.InnerException?.Message.Contains("unique", StringComparison.OrdinalIgnoreCase) == true || 
+                dbEx.InnerException?.Message.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return (false, "A student with the same admission number already exists.", null);
+            }
             return (false, "A database error occurred while registering the student.",null);
         } catch (Exception ex){
             _logger.LogError(ex, "An unexpected error occurred while registering the student");
