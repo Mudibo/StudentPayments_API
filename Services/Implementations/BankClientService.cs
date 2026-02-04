@@ -82,6 +82,7 @@ public class BankClientService : IBankClientService
             var bankClient = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == dto.ClientId.Trim() && bc.IsActive);
             if (bankClient == null)
             {
+                _logger.LogWarning("Failed authentication attempt for Bank Client with ClientId: {ClientId}", dto.ClientId.Trim());
                 return new BankClientAuthResponseDto
                 {
                     Success = false,
@@ -93,6 +94,7 @@ public class BankClientService : IBankClientService
             bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), bankClient.ClientSecretHash);
             if (!isSecretValid)
             {
+                _logger.LogWarning("Failed authentication attempt for Bank Client with ClientId: {ClientId} due to invalid secret", dto.ClientId.Trim());
                 return new BankClientAuthResponseDto
                 {
                     Success = false,
@@ -102,6 +104,7 @@ public class BankClientService : IBankClientService
                 };
             }
             var tokenResponse = _tokenService.GenerateBankClientToken(bankClient);
+            _logger.LogInformation("Bank Client with ClientId: {ClientId} authenticated successfully", dto.ClientId.Trim());
             return new BankClientAuthResponseDto
             {
                 Success = true,
