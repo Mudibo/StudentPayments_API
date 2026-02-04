@@ -56,6 +56,7 @@ builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
             .MapEnum<PaymentChannelEnum>("payment_channel_enum")
     )
 );
+builder.Services.AddScoped<IBankClientService, BankClientService>();
 
 //Configure token validation
 builder.Services.AddAuthentication("Bearer")
