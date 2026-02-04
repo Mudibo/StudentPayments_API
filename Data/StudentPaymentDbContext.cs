@@ -14,6 +14,7 @@ public class StudentPaymentsDbContext : DbContext
     public DbSet<Student> Students { get; set; } //DbSet<t> represents a table in the database
     public DbSet<Payment> Payments { get; set; } //DbSet<t> represents a table in the database
     public DbSet<StudentDues> StudentDues { get; set; }
+    public DbSet<BankClient> BankClients { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Register the PostgreSQL enum for correct mapping
@@ -21,6 +22,9 @@ public class StudentPaymentsDbContext : DbContext
         modelBuilder.HasPostgresEnum<EnrollmentStatusEnum>("enrollment_enum");
         modelBuilder.HasPostgresEnum<PaymentTypeEnum>("payment_type_enum");
         modelBuilder.HasPostgresEnum<PaymentChannelEnum>("payment_channel_enum");
-        modelBuilder.Entity<Payment>();
+        modelBuilder.Entity<Payment>()
+            .HasOne(p => p.BankClient)
+            .WithMany(bc => bc.Payments)
+            .HasForeignKey(p => p.BankClientId);
     }
 }

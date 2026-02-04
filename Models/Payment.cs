@@ -36,4 +36,7 @@ public class Payment
 
     [Column("updated_at")]
     public DateTime UpdatedAt {get; set;}
+    [Column("bank_client_id")]
+    public int? BankClientId {get;set;}
+    public BankClient BankClient {get;set;}
 }
