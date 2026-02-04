@@ -6,6 +6,7 @@ public interface ITokenService
 {
     //Return 2 values: the generated token string and its expiration time
     TokenResponseDto GenerateToken(Student student);
+    TokenResponseDto GenerateBankClientToken(BankClient bankClient);
 }
 //Return type: TokenResponseDto
 //Method: GenerateToken

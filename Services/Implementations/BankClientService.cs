@@ -1,20 +1,22 @@
-using System;
-using System.Threading.Tasks;
+
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Models;
 using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.Data;
 using Microsoft.EntityFrameworkCore;
 using StudentPayments_API.DTOs.Responses;
+using StudentPayments_API.Security.Interfaces;
 
 public class BankClientService : IBankClientService
 {
     private readonly StudentPaymentsDbContext _context;
     private readonly ILogger<BankClientService> _logger;
-    public BankClientService(StudentPaymentsDbContext context, ILogger<BankClientService> logger)
+    private readonly ITokenService _tokenService;
+    public BankClientService(StudentPaymentsDbContext context, ILogger<BankClientService> logger, ITokenService tokenService)
     {
         _context = context;
         _logger = logger;
+        _tokenService = tokenService;
     }
     public async Task<AddBankClientResponseDto> CreateBankClientAsync(CreateBankClientDto dto)
     {
@@ -73,4 +75,53 @@ public class BankClientService : IBankClientService
             };
         }     
         }
+        public async Task<BankClientAuthResponseDto> AuthenticateBankClientAsync(BankClientAuthRequestDto dto)
+        {
+        try
+        {
+            var bankClient = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == dto.ClientId.Trim() && bc.IsActive);
+            if (bankClient == null)
+            {
+                return new BankClientAuthResponseDto
+                {
+                    Success = false,
+                    Message = "Invalid Client ID or inactive Bank Client.",
+                    AccessToken = null, 
+                    BankName = null
+                };
+            }
+            bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), bankClient.ClientSecretHash);
+            if (!isSecretValid)
+            {
+                return new BankClientAuthResponseDto
+                {
+                    Success = false,
+                    Message = "Invalid Client Secret",
+                    AccessToken = null,
+                    BankName = null
+                };
+            }
+            var tokenResponse = _tokenService.GenerateBankClientToken(bankClient);
+            return new BankClientAuthResponseDto
+            {
+                Success = true,
+                Message = "Authentication Successful",
+                AccessToken = tokenResponse.Token,
+                ExpiresAt = tokenResponse.Expiration,
+                BankName = bankClient.BankName,  
+            };
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while authenticating bank client with ClientId: {ClientId}", dto.ClientId.Trim());
+            return new BankClientAuthResponseDto
+            {
+                Success = false,
+                Message = "An unexpected error occurred while authenticating the bank client",
+                AccessToken = null,
+                BankName = null
+            };
+        }
+        }
     }
+ 

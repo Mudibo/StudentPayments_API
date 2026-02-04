@@ -17,6 +17,8 @@ public class TokenService : ITokenService
     {
         _config = config;
     }
+
+    //Generate token for students and admins
     public TokenResponseDto GenerateToken(Student student)
     {
         var key = Encoding.UTF8.GetBytes(_config["Jwt:Secret"]);
@@ -46,6 +48,34 @@ public class TokenService : ITokenService
             Token = tokenHandler.WriteToken(token),
             Expiration = expires    ,
             Role = student.Role                    
+        };
+    }
+    //Generate token for bank clients
+    public TokenResponseDto GenerateBankClientToken(BankClient bankClient)
+    {
+        var key = Encoding.UTF8.GetBytes(_config["Jwt:Secret"]);
+        var expires = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:TokenLifetimeMinutes"])); //Token expiration time
+        var claims = new[]
+        {
+            new Claim("client_id", bankClient.ClientId),
+            new Claim("bank_name", bankClient.BankName),
+            new Claim(ClaimTypes.Role, "BankClient")
+        };
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = expires,
+            Issuer = _config["Jwt:Issuer"],
+            Audience = _config["Jwt:Audience"],
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return new TokenResponseDto
+        {
+            Token = tokenHandler.WriteToken(token),
+            Expiration = expires,
+            Role = "BankClient"
         };
     }
 }
