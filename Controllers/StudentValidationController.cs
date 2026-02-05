@@ -2,13 +2,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentPayments_API.Data;
 using StudentPayments_API.Services.Interfaces;
+using StudentPayments_API.DTOs.Requests;
+using StudentPayments_API.DTOs.Responses;
 
 namespace StudentPayments_API.Controllers;
 
 //Creating a controller to handle student validation endpoint and require JWT authentication
 
-[Authorize] //Require JWT authentication for all actions in this controller
-[ApiController] //Indicate that this is an API controller
+[Authorize(Roles = "BankClient")] //Require JWT authentication for all actions in this controller
+[ApiController] 
 [Route("api/[controller]")]
 public class StudentValidationController : ControllerBase
 {
@@ -20,38 +22,33 @@ public class StudentValidationController : ControllerBase
     }
 
     //Route produced: GET api/StudentValidation/validate
-    [HttpGet("validate")]
+    [HttpPost("validate")]
     //async as the validation service performs asynchronous work (Database Access)
-    public async Task<IActionResult> ValidateStudent()
+    public async Task<IActionResult> ValidateStudent([FromBody] StudentValidationRequestDto dto)
     {
-        //Extract claims from the JWT token
-        //Syntax: User(authenticated user), Claims(list of claims), FirstOrDefault(Iterate through claims, and find the first claim whose Type matches admission number) ?.Value ->The claim value
-        // The ?. operator has been used to handle null values gracefully, by returning null instead of throwing an exception if the claim is null
-        var admissionNumber = User.Claims.FirstOrDefault(c => c.Type == "admissionNumber")?.Value;
-        var program = User.Claims.FirstOrDefault(c => c.Type == "program" )?.Value;
-        var mobileNumber = User.Claims.FirstOrDefault(c => c.Type == "mobileNumber")?.Value;
-
-        //Validate required claims, business logic requires all 3 claims
-        if(string.IsNullOrEmpty(admissionNumber) || string.IsNullOrEmpty(program) || string.IsNullOrEmpty(mobileNumber)){
-            //HTTP response 400 Bad Request
-            return BadRequest(new {
-                message = "Required claims are missing in the token."
+        if(string.IsNullOrEmpty(dto.AdmissionNumber)){
+            return BadRequest(new ApiErrorDto
+            {
+                Message = "Admission number is required",
             });
         }
-        //Call the validation service to validate the student
-        var (isValid, student, message) = await _validationService.ValidateStudentAsync(admissionNumber, program, mobileNumber);
-        if(isValid){
-            //Http resonse 200 ok
-            return Ok(new
-            {
-                message = "Student Validated successfully",
-                student
-            });
-        }else{
-            //Http response 404 not found
-            return NotFound(new {
-                message
-            });
+        var response = await _validationService.ValidateStudentAsync(dto);
+        switch(response.Status){
+            case Models.StudentValidationStatus.Valid:
+                return Ok(response);
+            case Models.StudentValidationStatus.NotFound:
+                return NotFound(new ApiErrorDto {
+                    Message = response.Message
+                });
+            case Models.StudentValidationStatus.Inactive:
+                return StatusCode(403, new ApiErrorDto {
+                    Message = response.Message
+                });
+            default:
+                return StatusCode(500, new ApiErrorDto
+                {
+                    Message = "An unexpected error occurred during student validation"
+                });
         }
     }
 }

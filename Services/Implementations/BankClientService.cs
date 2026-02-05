@@ -6,6 +6,7 @@ using StudentPayments_API.Data;
 using Microsoft.EntityFrameworkCore;
 using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.Security.Interfaces;
+using System.Xml;
 
 public class BankClientService : IBankClientService
 {
@@ -79,6 +80,17 @@ public class BankClientService : IBankClientService
         {
         try
         {
+            if(string.IsNullOrWhiteSpace(dto.ClientId) || string.IsNullOrWhiteSpace(dto.ClientSecret))
+            {
+                _logger.LogWarning("Authentication attempt with missing ClientId or Client Secret");
+                return new BankClientAuthResponseDto
+                {
+                    Success = false,
+                    Message = "Client ID and Client Secret are required.",
+                    AccessToken = null,
+                    BankName = null
+                };
+            }
             var bankClient = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == dto.ClientId.Trim() && bc.IsActive);
             if (bankClient == null)
             {
