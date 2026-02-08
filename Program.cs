@@ -37,7 +37,7 @@ Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnec
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Removed unsupported AddOpenApi for .NET 8.0
 builder.Services.AddScoped<IStudentDuesService, StudentDuesService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddControllers()
@@ -48,15 +48,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IStudentValidationService, StudentValidationService>();
 // Register both enums for Npgsql mapping
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsqlOptions => npgsqlOptions
-            .MapEnum<ProgramEnum>()
-            .MapEnum<EnrollmentStatusEnum>("enrollment_enum")
-            .MapEnum<PaymentTypeEnum>("payment_type_enum")
-            .MapEnum<PaymentChannelEnum>("payment_channel_enum")
-    )
-);
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IBankClientService, BankClientService>();
 
 //Configure token validation
@@ -84,10 +76,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// Removed unsupported MapOpenApi for .NET 8.0
 
 app.UseHttpsRedirection();
 app.Run();
