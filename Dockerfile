@@ -1,7 +1,7 @@
 # =========================
 # Build stage
 # =========================
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 # Copy csproj and restore dependencies
@@ -15,7 +15,7 @@ RUN dotnet publish -c Release -o /app/publish
 # =========================
 # Runtime stage
 # =========================
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 # Copy published output from build stage
@@ -28,4 +28,4 @@ EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
 # Start the application
-ENTRYPOINT ["dotnet", "<YourProjectName>.dll"]
+ENTRYPOINT ["dotnet", "StudentPayments_API.dll"]
