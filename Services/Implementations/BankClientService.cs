@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.Security.Interfaces;
 using System.Xml;
+using StudentPayments_API.Models.Enums;
+using Npgsql;
 
 public class BankClientService : IBankClientService
 {
@@ -86,6 +88,7 @@ public class BankClientService : IBankClientService
                 return new BankClientAuthResponseDto
                 {
                     Success = false,
+                    ErrorEnum = BankAuthErrorEnum.MissingCredentials,
                     Message = "Client ID and Client Secret are required.",
                     AccessToken = null,
                     BankName = null
@@ -98,6 +101,7 @@ public class BankClientService : IBankClientService
                 return new BankClientAuthResponseDto
                 {
                     Success = false,
+                    ErrorEnum = BankAuthErrorEnum.InvalidCredentials,
                     Message = "Invalid Client ID or inactive Bank Client.",
                     AccessToken = null, 
                     BankName = null
@@ -110,7 +114,8 @@ public class BankClientService : IBankClientService
                 return new BankClientAuthResponseDto
                 {
                     Success = false,
-                    Message = "Invalid Client Secret",
+                    ErrorEnum = BankAuthErrorEnum.InvalidCredentials,
+                    Message = "Invalid Client Credentials",
                     AccessToken = null,
                     BankName = null
                 };
@@ -120,10 +125,44 @@ public class BankClientService : IBankClientService
             return new BankClientAuthResponseDto
             {
                 Success = true,
+                ErrorEnum = BankAuthErrorEnum.None,
                 Message = "Authentication Successful",
                 AccessToken = tokenResponse.Token,
                 ExpiresAt = tokenResponse.Expiration,
                 BankName = bankClient.BankName,  
+            };
+        }catch(DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, "Database error while authenticating bank client with ClientId: {ClientId}", dto.ClientId.Trim());
+            return new BankClientAuthResponseDto
+            {
+                Success = false,
+                ErrorEnum = BankAuthErrorEnum.DatabaseError,
+                Message = "A database error occurred while authenticating the bank client",
+                AccessToken = null,
+                BankName = null
+            };
+        }catch(NpgsqlException npgEx)when(npgEx.IsTransient)
+        {
+            _logger.LogError(npgEx, "Database connection error while authenticating bank client with ClientId: {ClientId}", dto.ClientId.Trim());
+            return new BankClientAuthResponseDto
+            {
+                Success = false,
+                ErrorEnum = BankAuthErrorEnum.DatabaseError,
+                Message = "A database error occurred while authenticating the bank client",
+                AccessToken = null,
+                BankName = null
+            };
+        }catch(TimeoutException timeoutEx)
+        {
+            _logger.LogError(timeoutEx, "Database timeout while authenticating bank client with ClientId: {ClientId}", dto.ClientId.Trim());
+            return new BankClientAuthResponseDto
+            {
+                Success = false,
+                ErrorEnum = BankAuthErrorEnum.DatabaseError,
+                Message = "A database error occurred while authenticating the bank client",
+                AccessToken = null,
+                BankName = null
             };
         }
         catch(Exception ex)
@@ -132,6 +171,7 @@ public class BankClientService : IBankClientService
             return new BankClientAuthResponseDto
             {
                 Success = false,
+                ErrorEnum = BankAuthErrorEnum.UnexpectedError,
                 Message = "An unexpected error occurred while authenticating the bank client",
                 AccessToken = null,
                 BankName = null
