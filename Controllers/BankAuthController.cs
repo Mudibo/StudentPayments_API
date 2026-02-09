@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Services.Interfaces;
+using StudentPayments_API.Models.Enums;
 using System.Threading.Tasks;
 
 [ApiController]
@@ -19,16 +20,23 @@ public class BankAuthController : ControllerBase
         var response = await _bankClientService.AuthenticateBankClientAsync(dto);
         if (!response.Success)
         {
-            if(response.Message == "Invalid Client ID or inactive Bank Client." || response.Message == "Invalid Client Secret")
+            if(response.ErrorEnum == BankAuthErrorEnum.InvalidCredentials || response.ErrorEnum == BankAuthErrorEnum.ClientInactive)
             {
                 return Unauthorized(new
                 {
                     message = response.Message
                 });
             }
-            return BadRequest(new
+            if(response.ErrorEnum == BankAuthErrorEnum.DatabaseError)
             {
-                message = response.Message
+                return StatusCode(503, new
+                {
+                    message = "Service temporarily unavailable. Please try again"
+                });
+            }
+            return StatusCode(500, new
+            {
+                message = "An unexpected error occurred. Please try again"
             });
         }
         return Ok(response);

@@ -9,6 +9,8 @@ using StudentPayments_API.Services.Implementations;
 using StudentPayments_API.Security.Interfaces;
 using StudentPayments_API.Security.Implementations;
 using Serilog;
+using AspNetCoreRateLimit;
+using StudentPayments_API.Middleware;
 // Register the enum mapping globally for Npgsql
 
 
@@ -46,9 +48,19 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<IStudentRegistrationService, StudentRegistrationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IStudentValidationService, StudentValidationService>();
-// Register both enums for Npgsql mapping
+
+// Register Npgsql enum mapping using NpgsqlDataSourceBuilder (Npgsql 7+/8+)
+var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+
+// Map all PostgreSQL enums to C# enums
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.EnrollmentStatusEnum>("public.enrollment_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.ProgramEnum>("public.program_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.PaymentTypeEnum>("public.payment_type_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.PaymentChannelEnum>("public.payment_channel_enum");
+var dataSource = dataSourceBuilder.Build();
+builder.Services.AddSingleton(dataSource);
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(dataSource));
 builder.Services.AddScoped<IBankClientService, BankClientService>();
 
 //Configure token validation
@@ -70,10 +82,16 @@ builder.Services.AddAuthorization();
 
 //Register the student validation service
 builder.Services.AddScoped<StudentPayments_API.Services.Interfaces.IStudentValidationService, StudentPayments_API.Services.Implementations.StudentValidationService>();
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddInMemoryRateLimiting();
 var app = builder.Build();
 
 app.UseAuthentication();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
+app.UseIpRateLimiting();
 app.MapControllers();
 // Configure the HTTP request pipeline.
 // Removed unsupported MapOpenApi for .NET 8.0
