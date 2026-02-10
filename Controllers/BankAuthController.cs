@@ -27,11 +27,11 @@ public class BankAuthController : ControllerBase
                     message = response.Message
                 });
             }
-            if(response.ErrorEnum == BankAuthErrorEnum.DatabaseError)
+            if(response.ErrorEnum == BankAuthErrorEnum.DatabaseError || response.ErrorEnum == BankAuthErrorEnum.TransientError)
             {
                 return StatusCode(503, new
                 {
-                    message = "Service temporarily unavailable. Please try again"
+                    message = "Database error occurred. Please try again."
                 });
             }
             return StatusCode(500, new

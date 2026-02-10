@@ -6,19 +6,22 @@ using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace StudentPayments_API.Services.Implementations;
 public class StudentValidationService : IStudentValidationService
 {
     private readonly StudentPaymentsDbContext _context;
     private readonly ILogger<StudentValidationService> _logger;
+    private readonly IDistributedCache _cache;
 
     //Inject the DbContext for database access
     //Constructor receives the DbContext and stores it
-    public StudentValidationService(StudentPaymentsDbContext context, ILogger<StudentValidationService> logger)
+    public StudentValidationService(StudentPaymentsDbContext context, ILogger<StudentValidationService> logger, IDistributedCache cache)
     {
         _context = context;
         _logger = logger;
+        _cache = cache;
     }
     
     public async Task<StudentValidationResponseDto> ValidateStudentAsync(StudentValidationRequestDto dto)

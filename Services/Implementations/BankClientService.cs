@@ -164,6 +164,17 @@ public class BankClientService : IBankClientService
                 AccessToken = null,
                 BankName = null
             };
+        }catch(InvalidOperationException invOpEx)
+        {
+            _logger.LogError(invOpEx, "Database operation error while authenticating bank client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId, invOpEx.GetType().FullName, invOpEx.StackTrace);
+            return new BankClientAuthResponseDto
+            {
+                Success = false,
+                ErrorEnum = BankAuthErrorEnum.TransientError,
+                Message = "A database error occurred while authenticating the bank client. Please try again.",
+                AccessToken = null,
+                BankName = null
+            };
         }
         catch(Exception ex)
         {
