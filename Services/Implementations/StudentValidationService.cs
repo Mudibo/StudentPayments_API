@@ -24,23 +24,31 @@ public class StudentValidationService : IStudentValidationService
     public async Task<StudentValidationResponseDto> ValidateStudentAsync(StudentValidationRequestDto dto)
     {
         try {
-            var student = await _context.Students.FirstOrDefaultAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim());
+            if (string.IsNullOrWhiteSpace(dto.AdmissionNumber))
+            {
+                _logger.LogWarning("Admission number is required but was not provided.");
+                return new StudentValidationResponseDto {
+                    Status = StudentValidationStatus.Error,
+                    Message = "Admission number is required",
+                    StudentName = null,
+                    Program = null
+                };
+            }
+            var student = await _context.Students
+                .Where(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())
+                .Select(s => new
+                {
+                    s.FirstName,
+                    s.LastName,
+                    s.Program,
+                    s.EnrollmentStatus
+                }).FirstOrDefaultAsync();
             if(student == null)
             {
                 _logger.LogWarning("Student not found with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
                 return new StudentValidationResponseDto {
                     Status = StudentValidationStatus.NotFound,
                     Message = "Student not found",
-                    StudentName = null,
-                    Program = null
-                };
-            }
-            else if (string.IsNullOrWhiteSpace(dto.AdmissionNumber))
-            {
-                _logger.LogWarning("Admission number is required but was not provided.");
-                return new StudentValidationResponseDto {
-                    Status = StudentValidationStatus.Error,
-                    Message = "Admission number is required",
                     StudentName = null,
                     Program = null
                 };
@@ -100,8 +108,7 @@ public class StudentValidationService : IStudentValidationService
                 StudentName = null,
                 Program = null
             };
-        }
-        catch(Exception ex){
+        }catch(Exception ex){
             _logger.LogError(ex, "An error occurred while validating student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber, ex.GetType().FullName, ex.StackTrace);
             return new StudentValidationResponseDto {
                 Status = StudentValidationStatus.Error,
