@@ -7,5 +7,6 @@ public enum BankAuthErrorEnum
     InvalidCredentials,
     ClientInactive,
     DatabaseError,
+    TransientError,
     UnexpectedError
 }
