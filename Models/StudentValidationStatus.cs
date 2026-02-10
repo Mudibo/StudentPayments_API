@@ -5,5 +5,6 @@ public enum StudentValidationStatus
     Valid,
     NotFound,
     Inactive,
-    Error
+    Error,
+    TransientError
 }

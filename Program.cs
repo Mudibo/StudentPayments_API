@@ -88,10 +88,10 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddInMemoryRateLimiting();
 var app = builder.Build();
 
+app.UseIpRateLimiting();
 app.UseAuthentication();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
-app.UseIpRateLimiting();
 app.MapControllers();
 // Configure the HTTP request pipeline.
 // Removed unsupported MapOpenApi for .NET 8.0

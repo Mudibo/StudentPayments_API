@@ -5,6 +5,7 @@ using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace StudentPayments_API.Services.Implementations;
 public class StudentValidationService : IStudentValidationService
@@ -63,8 +64,45 @@ public class StudentValidationService : IStudentValidationService
                     Program = student.Program.ToString()
                 };
             }
-        }catch(Exception ex){
-            _logger.LogError(ex, "An error occurred while validating student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+        }catch(TimeoutException tex)
+        {
+            _logger.LogError(tex, "A timeout occurred while validating student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber, tex.GetType().FullName, tex.StackTrace);
+            return new StudentValidationResponseDto {
+                Status = StudentValidationStatus.TransientError,
+                Message = "A database error occurred during student validation. Please try again.",
+                StudentName = null,
+                Program = null
+            };
+        }catch(NpgsqlException npex)
+        {
+            _logger.LogError(npex, "A database error occurred while validating student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber, npex.GetType().FullName, npex.StackTrace);
+            return new StudentValidationResponseDto {
+                Status = StudentValidationStatus.TransientError,
+                Message = "A database error occurred during student validation. Please try again.",
+                StudentName = null,
+                Program = null
+            };
+        }catch (DbUpdateException dbEx){
+            _logger.LogError(dbEx, "A database update error occurred while validating student with AdmissionNumber: {AdmissionNumber}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, dbEx.GetType().FullName, dbEx.StackTrace);
+            return new StudentValidationResponseDto
+            {
+                Status = StudentValidationStatus.TransientError,
+                Message = "A database error occurred during student validation. Please try again.",
+                StudentName = null,
+                Program = null
+            };
+        }catch(InvalidOperationException invOpEx){
+            _logger.LogError(invOpEx, "A database operation error occurred while validating student with AdmissionNumber: {AdmissionNumber}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, invOpEx.GetType().FullName, invOpEx.StackTrace);
+             return new StudentValidationResponseDto
+            {
+                Status = StudentValidationStatus.TransientError,
+                Message = "A database error occurred during student validation. Please try again.",
+                StudentName = null,
+                Program = null
+            };
+        }
+        catch(Exception ex){
+            _logger.LogError(ex, "An error occurred while validating student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber, ex.GetType().FullName, ex.StackTrace);
             return new StudentValidationResponseDto {
                 Status = StudentValidationStatus.Error,
                 Message = "An error occurred during student validation",

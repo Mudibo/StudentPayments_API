@@ -44,6 +44,10 @@ public class StudentValidationController : ControllerBase
                 return StatusCode(403, new ApiErrorDto {
                     Message = response.Message
                 });
+            case Models.StudentValidationStatus.TransientError:
+                return StatusCode(503, new ApiErrorDto {
+                    Message = response.Message
+                });
             default:
                 return StatusCode(500, new ApiErrorDto
                 {
