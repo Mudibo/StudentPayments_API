@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Models.Enums;
 using StudentPayments_API.Services.Interfaces;
 using System.Text;
@@ -62,7 +63,12 @@ public class OAuthController : ControllerBase
         var clientSecret = credentials[1];
 
         //Authenticate the client using the bank client service
-        var result = await _bankClientService.AuthenticateOAuthClientAsync(clientId, clientSecret, scope);
+        var result = await _bankClientService.AuthenticateOAuthClientAsync(new OAuthClientAuthRequestDto
+        {
+            ClientId = clientId,
+            ClientSecret = clientSecret,
+            Scope = scope
+        });
         if (!result.Success)
         {
             return result.Error switch

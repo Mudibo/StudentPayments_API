@@ -7,5 +7,5 @@ namespace StudentPayments_API.Services.Interfaces;
 public interface IBankClientService
 {
     Task<AddBankClientResponseDto> CreateBankClientAsync(CreateBankClientDto dto);
-    Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(string clientId, string clientSecret, string scope);
+    Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto);
 }

@@ -79,26 +79,22 @@ public class BankClientService : IBankClientService
         }     
         }
         
-        public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(
-            string clientId,
-            string clientSecret,
-            string scope
-        ){
+        public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto){
             try
         {
-            var client = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == clientId.Trim() && bc.IsActive);
+            var client = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == dto.ClientId.Trim() && bc.IsActive);
             if (client == null)
             {
-                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - client not found or inactive", clientId.Trim());
+                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - client not found or inactive", dto.ClientId.Trim());
                 return new OAuthTokenResponseDto
                 {
                     Success = false,
                     Error = OAuthErrorEnum.InvalidClient,
                 };
             }
-            bool isSecretValid = BCrypt.Net.BCrypt.Verify(clientSecret.Trim(), client.ClientSecretHash);
+            bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), client.ClientSecretHash);
             if (!isSecretValid)            {
-                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", clientId.Trim());
+                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", dto.ClientId.Trim());
                 return new OAuthTokenResponseDto
                 {
                     Success = false,
@@ -107,10 +103,10 @@ public class BankClientService : IBankClientService
             }
             //Validate requested scopes against allowed scopes
             var allowedScopes = OAuthScopes.All;
-            var requestedScopes = scope?.Split(' ') ?? Array.Empty<string>();
+            var requestedScopes = dto.Scope?.Split(' ') ?? Array.Empty<string>();
             if(requestedScopes.Any(s => !allowedScopes.Contains(s)))
             {
-                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", clientId.Trim(), scope);
+                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", dto.ClientId.Trim(), dto.Scope);
                 return new OAuthTokenResponseDto
                 {
                     Success = false,
@@ -131,7 +127,7 @@ public class BankClientService : IBankClientService
             };
         }catch(NpgsqlException npgEx)when(npgEx.IsTransient)
         {
-            _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", clientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
+            _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
             return new OAuthTokenResponseDto
             {
                 Success = false,
@@ -139,7 +135,7 @@ public class BankClientService : IBankClientService
             };
         }catch(InvalidOperationException invOpEx) when (invOpEx.InnerException is NpgsqlException npgEx && npgEx.IsTransient)
         {
-            _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", clientId.Trim(), invOpEx.GetType().FullName, invOpEx.StackTrace);
+            _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), invOpEx.GetType().FullName, invOpEx.StackTrace);
             return new OAuthTokenResponseDto
             {
                 Success = false,
@@ -148,7 +144,7 @@ public class BankClientService : IBankClientService
         }
         catch(Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", clientId.Trim());
+            _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", dto.ClientId.Trim());
             return new OAuthTokenResponseDto
             {
                 Success = false,
