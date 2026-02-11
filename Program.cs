@@ -12,6 +12,7 @@ using Serilog;
 using AspNetCoreRateLimit;
 using StudentPayments_API.Middleware;
 using StudentPayments_API.Security.OAuthScopes;
+using Microsoft.OpenApi.Models;
 // Register the enum mapping globally for Npgsql
 
 
@@ -37,6 +38,49 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 // Print the connection string for debugging
 Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
+
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "StudentPayments API", Version = "v1" });
+    // JWT Bearer for most endpoints
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    // Basic Auth for OAuth token endpoint
+    options.AddSecurityDefinition("Basic", new OpenApiSecurityScheme
+    {
+        Description = "Basic Authorization header for client_id:client_secret. Example: 'Basic Base64(client_id:client_secret)'",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "basic"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+    // Register BasicAuthOperationFilter for OAuth token endpoint
+    options.OperationFilter<StudentPayments_API.Swagger.BasicAuthOperationFilter>();
+});
+
 
 
 builder.Services.AddScoped<IStudentDuesService, StudentDuesService>();
@@ -105,6 +149,10 @@ app.UseAuthorization();
 app.MapControllers();
 // Configure the HTTP request pipeline.
 
+if(app.Environment.IsDevelopment()){
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 app.Run();
