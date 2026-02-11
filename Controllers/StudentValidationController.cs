@@ -9,7 +9,7 @@ namespace StudentPayments_API.Controllers;
 
 //Creating a controller to handle student validation endpoint and require JWT authentication
 
-[Authorize(Roles = "BankClient")] //Require JWT authentication for all actions in this controller
+[Authorize(Policy ="StudentValidation")] //Require the "StudentValidation" policy which checks for the correct scope claim in the token
 [ApiController] 
 [Route("api/[controller]")]
 public class StudentValidationController : ControllerBase

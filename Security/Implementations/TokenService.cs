@@ -78,4 +78,25 @@ public class TokenService : ITokenService
             Role = "BankClient"
         };
     }
+    public TokenResponseDto GenerateOAuthToken(string clientId, string[] scopes)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim("client_id", clientId),
+            new Claim("scope", string.Join(' ', scopes))
+        };
+        var expires = DateTime.UtcNow.AddMinutes(15);
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: expires,
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Secret"])), SecurityAlgorithms.HmacSha256)
+        );
+        return new TokenResponseDto
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Expiration = expires
+        };
+    }
 }
