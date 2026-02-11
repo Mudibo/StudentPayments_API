@@ -37,6 +37,28 @@ public class StudentValidationService : IStudentValidationService
                     Program = null
                 };
             }
+            string normalizedAdmissionNumber = dto.AdmissionNumber.Trim();
+            string cacheKey = $"student:validation:{normalizedAdmissionNumber}";
+            StudentValidationResponseDto cachedResponse = null;
+
+            //Try to get from cache
+            try
+            {
+                var cached = await _cache.GetStringAsync(cacheKey);
+                if(cached != null)
+                {
+                    _logger.LogInformation("Cache hit for student validation with AdmissionNumber: {AdmissionNumber}", normalizedAdmissionNumber);
+                    cachedResponse = System.Text.Json.JsonSerializer.Deserialize<StudentValidationResponseDto>(cached);
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogWarning(ex, "Cache read failed for AdmissionNumber: {AdmissionNumber}", normalizedAdmissionNumber, ex.GetType().FullName, ex.StackTrace);
+            }
+            if(cachedResponse != null)
+            {
+                return cachedResponse;
+            }
             var student = await _context.Students
                 .Where(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())
                 .Select(s => new
@@ -46,6 +68,7 @@ public class StudentValidationService : IStudentValidationService
                     s.Program,
                     s.EnrollmentStatus
                 }).FirstOrDefaultAsync();
+            StudentValidationResponseDto response;
             if(student == null)
             {
                 _logger.LogWarning("Student not found with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
@@ -67,7 +90,7 @@ public class StudentValidationService : IStudentValidationService
                 };
             }else{
                 _logger.LogInformation("Student with AdmissionNumber: {AdmissionNumber} is valid.", dto.AdmissionNumber);
-                return new StudentValidationResponseDto
+                response = new StudentValidationResponseDto
                 {
                     Status = StudentValidationStatus.Valid,
                     Message = "Student validated successfully",
@@ -75,6 +98,21 @@ public class StudentValidationService : IStudentValidationService
                     Program = student.Program.ToString()
                 };
             }
+            //Cache the result
+            try
+            {
+                var cacheOptions = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = response.Status == StudentValidationStatus.Valid 
+                        ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(2)
+                };
+                await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(response), cacheOptions);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogWarning(ex, "Cache write failed for AdmissionNumber: {AdmissionNumber}", normalizedAdmissionNumber, ex.GetType().FullName, ex.StackTrace);
+            }
+            return response;
         }catch(TimeoutException tex)
         {
             _logger.LogError(tex, "A timeout occurred while validating student with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber, tex.GetType().FullName, tex.StackTrace);

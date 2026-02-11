@@ -11,6 +11,7 @@ using StudentPayments_API.Security.Implementations;
 using Serilog;
 using AspNetCoreRateLimit;
 using StudentPayments_API.Middleware;
+using StudentPayments_API.Security.OAuthScopes;
 // Register the enum mapping globally for Npgsql
 
 
@@ -37,9 +38,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // Print the connection string for debugging
 Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-// Removed unsupported AddOpenApi for .NET 8.0
+
 builder.Services.AddScoped<IStudentDuesService, StudentDuesService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddControllers()
@@ -78,7 +77,11 @@ builder.Services.AddAuthentication("Bearer")
             ValidateLifetime = true
         };
     });
-builder.Services.AddAuthorization();
+//Only allow access to student validation endpoint if the token has the correct scope claim
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("StudentValidation", policy => policy.RequireClaim("scope", OAuthScopes.StudentValidate));
+});
 
 //Register the student validation service
 builder.Services.AddScoped<StudentPayments_API.Services.Interfaces.IStudentValidationService, StudentPayments_API.Services.Implementations.StudentValidationService>();
