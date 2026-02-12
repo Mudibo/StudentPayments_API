@@ -11,7 +11,7 @@ namespace StudentPayments_API.Controllers;
 
 [Authorize(Policy ="StudentValidation")] //Require the "StudentValidation" policy which checks for the correct scope claim in the token
 [ApiController] 
-[Route("api/[controller]")]
+[Route("api/students")]
 public class StudentValidationController : ControllerBase
 {
     //Delegating business logic to service
@@ -46,6 +46,10 @@ public class StudentValidationController : ControllerBase
                 });
             case Models.StudentValidationStatus.TransientError:
                 return StatusCode(503, new ApiErrorDto {
+                    Message = response.Message
+                });
+            case Models.StudentValidationStatus.Error:
+                return BadRequest(new ApiErrorDto {
                     Message = response.Message
                 });
             default:
