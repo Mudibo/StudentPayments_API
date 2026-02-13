@@ -13,6 +13,10 @@ using AspNetCoreRateLimit;
 using StudentPayments_API.Middleware;
 using StudentPayments_API.Security.OAuthScopes;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
+using AspNetCoreRateLimit.Redis;
+using Microsoft.AspNetCore.HttpOverrides;
+using AspNetCoreRateLimit.Redis;
 // Register the enum mapping globally for Npgsql
 
 
@@ -132,7 +136,11 @@ builder.Services.AddScoped<StudentPayments_API.Services.Interfaces.IStudentValid
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-builder.Services.AddInMemoryRateLimiting();
+// Register the Redis connection multiplexer for AspNetCoreRateLimit.Redis
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis"))
+);
+builder.Services.AddRedisRateLimiting();
 
 //Redis Cache Configuration
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -140,15 +148,23 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
 });
 
+
 var app = builder.Build();
 
-app.UseIpRateLimiting();
+// Trust forwarded headers from nginx
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    
+});
+
+//app.UseIpRateLimiting();
 app.UseAuthentication();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
-// Configure the HTTP request pipeline.
 
+// Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
 
