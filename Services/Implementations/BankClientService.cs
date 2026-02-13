@@ -88,17 +88,17 @@ public class BankClientService : IBankClientService
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - client not found or inactive", dto.ClientId.Trim());
                 return new OAuthTokenResponseDto
                 {
-                    Success = false,
-                    Error = OAuthErrorEnum.InvalidClient,
+                    error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
+                    error_description = "Invalid Client Credentials."                    
                 };
             }
             bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), client.ClientSecretHash);
-            if (!isSecretValid)            {
+            if (!isSecretValid){
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", dto.ClientId.Trim());
                 return new OAuthTokenResponseDto
                 {
-                    Success = false,
-                    Error = OAuthErrorEnum.InvalidClient,
+                    error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
+                    error_description = "Invalid client credentials"
                 };
             }
             //Validate requested scopes against allowed scopes
@@ -109,8 +109,8 @@ public class BankClientService : IBankClientService
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", dto.ClientId.Trim(), dto.Scope);
                 return new OAuthTokenResponseDto
                 {
-                    Success = false,
-                    Error = OAuthErrorEnum.InvalidScope,
+                    error = OAuthErrorEnum.InvalidScope.ToOAuthErrorString(),
+                    error_description = "Invalid scope"
                 };
             }
             var token = _tokenService.GenerateOAuthToken(
@@ -119,27 +119,26 @@ public class BankClientService : IBankClientService
             );
             return new OAuthTokenResponseDto
             {
-                Success = true,
-                Error = OAuthErrorEnum.None,
-                AccessToken = token.Token,
-                ExpiresIn = (int)(token.Expiration - DateTime.UtcNow).TotalSeconds,
-                Scope = string.Join(" ", requestedScopes)
+                access_token = token.Token,
+                token_type = "Bearer",
+                expires_in = (int)(token.Expiration - DateTime.UtcNow).TotalSeconds,
+                scope = string.Join(" ", requestedScopes)
             };
         }catch(NpgsqlException npgEx)when(npgEx.IsTransient)
         {
             _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
             return new OAuthTokenResponseDto
             {
-                Success = false,
-                Error = OAuthErrorEnum.TemporarilyUnavailable,
+                error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                error_description = "Database error occurred. Please try again"
             };
         }catch(InvalidOperationException invOpEx) when (invOpEx.InnerException is NpgsqlException npgEx && npgEx.IsTransient)
         {
             _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), invOpEx.GetType().FullName, invOpEx.StackTrace);
             return new OAuthTokenResponseDto
             {
-                Success = false,
-                Error = OAuthErrorEnum.TemporarilyUnavailable,
+                error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                error_description = "Database error occurred. Please try again."
             };
         }
         catch(Exception ex)
@@ -147,8 +146,8 @@ public class BankClientService : IBankClientService
             _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", dto.ClientId.Trim());
             return new OAuthTokenResponseDto
             {
-                Success = false,
-                Error = OAuthErrorEnum.ServerError,
+                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                error_description = "Server error"
             };
         }
     }}

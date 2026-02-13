@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Writers;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Models.Enums;
 using StudentPayments_API.Services.Interfaces;
@@ -17,26 +18,24 @@ public class OAuthController : ControllerBase
     }
 
     [HttpPost("token")]
-    public async Task<IActionResult> Token(
-        [FromForm] string grant_type, 
-        [FromForm] string scope
-    )
+    public async Task<IActionResult> Token([FromForm] string scope, [FromForm] string grant_type)
     {
-        //Only accepts client_credentials grant type
-        if(grant_type != "client_credentials")
+        if(string.IsNullOrEmpty(grant_type) || grant_type!= "client_credentials")
         {
-            return BadRequest(new
+            return BadRequest(new OAuthTokenResponseDto
             {
-                error = "Unsupported grant type"
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Invalid grant_type."
             });
         }
         
         //Check if authorization header exists
         if(!Request.Headers.TryGetValue("Authorization", out var authHeader))
         {
-            return Unauthorized(new
+            return Unauthorized(new OAuthTokenResponseDto
             {
-                error = "Missing Authorization header"
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Authorization header is missing."
             });
         }
         
@@ -61,42 +60,48 @@ public class OAuthController : ControllerBase
         }
         var clientId = credentials[0];
         var clientSecret = credentials[1];
-
-        //Authenticate the client using the bank client service
-        var result = await _bankClientService.AuthenticateOAuthClientAsync(new OAuthClientAuthRequestDto
+        var dto = new OAuthClientAuthRequestDto
         {
             ClientId = clientId,
             ClientSecret = clientSecret,
-            Scope = scope
-        });
-        if (!result.Success)
+            Scope = scope,
+            GrantType = grant_type
+        };
+
+        //Authenticate the client using the bank client service
+        var result = await _bankClientService.AuthenticateOAuthClientAsync(dto);
+        if (!string.IsNullOrEmpty(result.error))
         {
-            return result.Error switch
+            return result.error switch
             {
-                OAuthErrorEnum.InvalidClient => Unauthorized(new
+                "invalid_client" => Unauthorized(new OAuthTokenResponseDto 
                 {
-                    error = "Invalid client credentials"
+                    error = result.error,
+                    error_description = "Invalid client credentials."
                 }),
-                OAuthErrorEnum.InvalidScope => BadRequest(new
+                "invalid_scope" => BadRequest(new OAuthTokenResponseDto
                 {
-                    error = "Invalid Scope"
+                    error = result.error,
+                    error_description = "Invalid scope"
                 }),
-                OAuthErrorEnum.TemporarilyUnavailable => StatusCode(503, new
+                "temporarily_unavailable" => StatusCode(503, new OAuthTokenResponseDto
                 {
-                    error = "Database Error occurred. Please try again"
+                    error = result.error
                 }),
-                _ => StatusCode(500, new
+                "server_error" => StatusCode(503, new OAuthTokenResponseDto
                 {
-                    error = "Server Error"
+                    error = result.error
+                }),
+                "unsupported_grant_type" => BadRequest(new OAuthTokenResponseDto
+                {
+                    error = result.error
+                }),
+                "invalid_request" => BadRequest(new OAuthTokenResponseDto
+                {
+                    error = result.error
                 })
             };
         }
-        return Ok(new
-        {
-            access_token = result.AccessToken,
-            token_type = "Bearer",
-            expires_in = result.ExpiresIn,
-            scope = result.Scope
-        });
+        return Ok(result);
     }
 }
