@@ -8,6 +8,7 @@ namespace StudentPayments_API.Models.Enums
         TemporarilyUnavailable,
         ServerError,
         UnsupportedGrantType,
+        Inactive,
         InvalidRequest
     }
 }

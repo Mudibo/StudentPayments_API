@@ -72,12 +72,26 @@ public class StudentValidationService : IStudentValidationService
             if(student == null)
             {
                 _logger.LogWarning("Student not found with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
-                return new StudentValidationResponseDto {
+                var notFoundResponse = new StudentValidationResponseDto {
                     Status = StudentValidationStatus.NotFound,
                     Message = "Student not found",
                     StudentName = null,
                     Program = null
                 };
+                try
+                {
+                    var cacheOptions = new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+                    };
+                    await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(notFoundResponse), cacheOptions);
+                    _logger.LogInformation("Caching not found result for AdmissionNumber: {AdmissionNumber}", normalizedAdmissionNumber);
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogWarning(ex, "Cache write failed for AdmissionNumber: {AdmissionNumber}", normalizedAdmissionNumber, ex.GetType().FullName, ex.StackTrace);
+                }
+                return notFoundResponse;
             }
             else if (student.EnrollmentStatus != Models.EnrollmentStatusEnum.Active)
             {
@@ -107,6 +121,7 @@ public class StudentValidationService : IStudentValidationService
                         ? TimeSpan.FromMinutes(5) : TimeSpan.FromMinutes(2)
                 };
                 await _cache.SetStringAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(response), cacheOptions);
+                _logger.LogInformation("Caching validation result for AdmissionNumber: {AdmissionNumber} with status: {Status}", normalizedAdmissionNumber, response.Status);
             }
             catch(Exception ex)
             {
