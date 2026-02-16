@@ -4,6 +4,7 @@ using StudentPayments_API.Data;
 using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.DTOs.Responses;
+using StudentPayments_API.Models.Enums;
 
 namespace StudentPayments_API.Controllers;
 
@@ -29,7 +30,8 @@ public class StudentValidationController : ControllerBase
         if(string.IsNullOrEmpty(dto.AdmissionNumber)){
             return BadRequest(new ApiErrorDto
             {
-                Message = "Admission number is required",
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Admission number is required."
             });
         }
         var response = await _validationService.ValidateStudentAsync(dto);
@@ -38,24 +40,29 @@ public class StudentValidationController : ControllerBase
                 return Ok(response);
             case Models.StudentValidationStatus.NotFound:
                 return NotFound(new ApiErrorDto {
-                    Message = response.Message
+                    error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                    error_description = response.Message
                 });
             case Models.StudentValidationStatus.Inactive:
                 return StatusCode(403, new ApiErrorDto {
-                    Message = response.Message
+                    error = OAuthErrorEnum.Inactive.ToOAuthErrorString(),
+                    error_description = response.Message
                 });
             case Models.StudentValidationStatus.TransientError:
                 return StatusCode(503, new ApiErrorDto {
-                    Message = response.Message
+                    error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                    error_description = response.Message
                 });
             case Models.StudentValidationStatus.Error:
                 return BadRequest(new ApiErrorDto {
-                    Message = response.Message
+                    error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                    error_description = response.Message
                 });
             default:
                 return StatusCode(500, new ApiErrorDto
                 {
-                    Message = "An unexpected error occurred during student validation"
+                    error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                    error_description = "An unexpected error occurred during student validation."
                 });
         }
     }
