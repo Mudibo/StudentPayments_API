@@ -86,20 +86,12 @@ public class BankClientService : IBankClientService
             if (client == null)
             {
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - client not found or inactive", dto.ClientId.Trim());
-                return new OAuthTokenResponseDto
-                {
-                    error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
-                    error_description = "Invalid Client Credentials."                    
-                };
+                throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
             bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), client.ClientSecretHash);
             if (!isSecretValid){
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", dto.ClientId.Trim());
-                return new OAuthTokenResponseDto
-                {
-                    error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
-                    error_description = "Invalid client credentials"
-                };
+                throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
             //Validate requested scopes against allowed scopes
             var allowedScopes = OAuthScopes.All;
@@ -107,11 +99,7 @@ public class BankClientService : IBankClientService
             if(requestedScopes.Any(s => !allowedScopes.Contains(s)))
             {
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", dto.ClientId.Trim(), dto.Scope);
-                return new OAuthTokenResponseDto
-                {
-                    error = OAuthErrorEnum.InvalidScope.ToOAuthErrorString(),
-                    error_description = "Invalid scope"
-                };
+                throw new OAuthException(OAuthErrorEnum.InvalidScope, "Invalid scope");
             }
             var token = _tokenService.GenerateOAuthToken(
                 client.ClientId,
@@ -127,28 +115,20 @@ public class BankClientService : IBankClientService
         }catch(NpgsqlException npgEx)when(npgEx.IsTransient)
         {
             _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
-            return new OAuthTokenResponseDto
-            {
-                error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
-                error_description = "Database error occurred. Please try again"
-            };
+            throw new OAuthException(OAuthErrorEnum.TemporarilyUnavailable, "Database error occurred. Please try again.");
         }catch(InvalidOperationException invOpEx) when (invOpEx.InnerException is NpgsqlException npgEx && npgEx.IsTransient)
         {
             _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), invOpEx.GetType().FullName, invOpEx.StackTrace);
-            return new OAuthTokenResponseDto
-            {
-                error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
-                error_description = "Database error occurred. Please try again."
-            };
+            throw new OAuthException(OAuthErrorEnum.TemporarilyUnavailable, "Database error occurred. Please try again.");
+        }
+        catch (OAuthException)
+        {
+            throw;
         }
         catch(Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", dto.ClientId.Trim());
-            return new OAuthTokenResponseDto
-            {
-                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
-                error_description = "Server error"
-            };
+            throw new OAuthException(OAuthErrorEnum.ServerError, "Server error");
         }
     }}
  

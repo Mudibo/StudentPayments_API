@@ -72,43 +72,45 @@ public class OAuthController : ControllerBase
         };
 
         //Authenticate the client using the bank client service
-        var result = await _bankClientService.AuthenticateOAuthClientAsync(dto);
-        if (!string.IsNullOrEmpty(result.error))
+        try
         {
-            return result.error switch
+            var result = await _bankClientService.AuthenticateOAuthClientAsync(dto);
+            return Ok(result);
+        }catch(OAuthException ex)
+        {
+            return ex.Error switch
             {
-                "invalid_client" => Unauthorized(new OAuthErrorResponseDto 
+                "invalid_client" => Unauthorized(new OAuthErrorResponseDto
                 {
-                    error = result.error,
-                    error_description = "Client credentials provided are invalid."
+                    error = ex.Error,
+                    error_description = ex.ErrorDescription
                 }),
                 "invalid_scope" => BadRequest(new OAuthErrorResponseDto
                 {
-                    error = result.error,
-                    error_description = "The scope provided is invalid for this client."
+                    error = ex.Error,
+                    error_description = ex.ErrorDescription
                 }),
                 "temporarily_unavailable" => StatusCode(503, new OAuthErrorResponseDto
                 {
-                    error = result.error,
-                    error_description = "Service temporarily unavailable. Please try again."
+                    error = ex.Error,
+                    error_description = ex.ErrorDescription
                 }),
                 "server_error" => StatusCode(500, new OAuthErrorResponseDto
                 {
-                    error = result.error,
-                    error_description = "An unexpected error occurred while processing the request. Please try again"
-                }),
-                "unsupported_grant_type" => BadRequest(new OAuthErrorResponseDto
-                {
-                    error = result.error,
-                    error_description = "The grant type provided is not supported."
+                    error = ex.Error,
+                    error_description = ex.ErrorDescription
                 }),
                 "invalid_request" => BadRequest(new OAuthErrorResponseDto
                 {
-                    error = result.error,
-                    error_description = "The request is missing a required parameter."
-                })
+                    error = ex.Error,
+                    error_description = ex.ErrorDescription
+                }),
+                "unsupported_grant_type" => BadRequest(new OAuthErrorResponseDto
+                {
+                    error = ex.Error,
+                    error_description = ex.ErrorDescription
+                }),
             };
         }
-        return Ok(result);
     }
 }
