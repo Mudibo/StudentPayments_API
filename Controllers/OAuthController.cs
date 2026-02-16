@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Writers;
 using StudentPayments_API.DTOs.Requests;
+using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.Models.Enums;
 using StudentPayments_API.Services.Interfaces;
 using System.Text;
@@ -22,17 +23,17 @@ public class OAuthController : ControllerBase
     {
         if(string.IsNullOrEmpty(grant_type) || grant_type!= "client_credentials")
         {
-            return BadRequest(new OAuthTokenResponseDto
+            return BadRequest(new OAuthErrorResponseDto
             {
                 error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
-                error_description = "Invalid grant_type."
+                error_description = "The grant_type provided is invalid."
             });
         }
         
         //Check if authorization header exists
         if(!Request.Headers.TryGetValue("Authorization", out var authHeader))
         {
-            return Unauthorized(new OAuthTokenResponseDto
+            return Unauthorized(new OAuthErrorResponseDto
             {
                 error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
                 error_description = "Authorization header is missing."
@@ -43,9 +44,10 @@ public class OAuthController : ControllerBase
         var header = authHeader.ToString();
         if (!header.StartsWith("Basic"))
         {
-            return Unauthorized(new
+            return Unauthorized(new OAuthErrorResponseDto
             {
-                error = "Invalid Authorization header"
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Authorization header provided is invalid."
             });
         }
 
@@ -53,9 +55,10 @@ public class OAuthController : ControllerBase
         var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(header.Replace("Basic ", ""))).Split(':');
         if (credentials.Length != 2)
         {
-            return Unauthorized(new
+            return Unauthorized(new OAuthErrorResponseDto
             {
-                error = "Invalid Authorization header"
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Authorization header format is invalid."
             });
         }
         var clientId = credentials[0];
@@ -74,31 +77,35 @@ public class OAuthController : ControllerBase
         {
             return result.error switch
             {
-                "invalid_client" => Unauthorized(new OAuthTokenResponseDto 
+                "invalid_client" => Unauthorized(new OAuthErrorResponseDto 
                 {
                     error = result.error,
-                    error_description = "Invalid client credentials."
+                    error_description = "Client credentials provided are invalid."
                 }),
-                "invalid_scope" => BadRequest(new OAuthTokenResponseDto
+                "invalid_scope" => BadRequest(new OAuthErrorResponseDto
                 {
                     error = result.error,
-                    error_description = "Invalid scope"
+                    error_description = "The scope provided is invalid for this client."
                 }),
-                "temporarily_unavailable" => StatusCode(503, new OAuthTokenResponseDto
+                "temporarily_unavailable" => StatusCode(503, new OAuthErrorResponseDto
                 {
-                    error = result.error
+                    error = result.error,
+                    error_description = "Service temporarily unavailable. Please try again."
                 }),
-                "server_error" => StatusCode(503, new OAuthTokenResponseDto
+                "server_error" => StatusCode(500, new OAuthErrorResponseDto
                 {
-                    error = result.error
+                    error = result.error,
+                    error_description = "An unexpected error occurred while processing the request. Please try again"
                 }),
-                "unsupported_grant_type" => BadRequest(new OAuthTokenResponseDto
+                "unsupported_grant_type" => BadRequest(new OAuthErrorResponseDto
                 {
-                    error = result.error
+                    error = result.error,
+                    error_description = "The grant type provided is not supported."
                 }),
-                "invalid_request" => BadRequest(new OAuthTokenResponseDto
+                "invalid_request" => BadRequest(new OAuthErrorResponseDto
                 {
-                    error = result.error
+                    error = result.error,
+                    error_description = "The request is missing a required parameter."
                 })
             };
         }
