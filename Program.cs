@@ -17,6 +17,7 @@ using StackExchange.Redis;
 using AspNetCoreRateLimit.Redis;
 using Microsoft.AspNetCore.HttpOverrides;
 using AspNetCoreRateLimit.Redis;
+using StudentPayments_API.Models.Enums;
 // Register the enum mapping globally for Npgsql
 
 
@@ -100,10 +101,10 @@ builder.Services.AddScoped<IStudentValidationService, StudentValidationService>(
 var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 // Map all PostgreSQL enums to C# enums
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.EnrollmentStatusEnum>("public.enrollment_enum");
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.ProgramEnum>("public.program_enum");
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.PaymentTypeEnum>("public.payment_type_enum");
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.PaymentChannelEnum>("public.payment_channel_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.EnrollmentStatusEnum>("public.enrollment_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.ProgramEnum>("public.program_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentTypeEnum>("public.payment_type_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentChannelEnum>("public.payment_channel_enum");
 var dataSource = dataSourceBuilder.Build();
 builder.Services.AddSingleton(dataSource);
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>

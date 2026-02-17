@@ -1,6 +1,7 @@
 namespace StudentPayments_API.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using StudentPayments_API.Models.Enums;
 
 //Class that represents a student in the system and maps directly to the students table in the database
 //Each property represents a column in the database table

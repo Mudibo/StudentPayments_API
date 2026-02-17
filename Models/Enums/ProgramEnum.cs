@@ -1,4 +1,4 @@
-namespace StudentPayments_API.Models;
+namespace StudentPayments_API.Models.Enums;
 using NpgsqlTypes;
 public enum ProgramEnum
 {
