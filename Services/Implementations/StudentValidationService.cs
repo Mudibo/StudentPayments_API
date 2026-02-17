@@ -4,6 +4,7 @@ using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Models;
+using StudentPayments_API.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Microsoft.Extensions.Caching.Distributed;
@@ -93,7 +94,7 @@ public class StudentValidationService : IStudentValidationService
                 }
                 return notFoundResponse;
             }
-            else if (student.EnrollmentStatus != Models.EnrollmentStatusEnum.Active)
+            else if (student.EnrollmentStatus != Models.Enums.EnrollmentStatusEnum.Active)
             {
                 _logger.LogWarning("Student with AdmissionNumber: {AdmissionNumber} has inactive enrollment status.", dto.AdmissionNumber);
                 return new StudentValidationResponseDto {

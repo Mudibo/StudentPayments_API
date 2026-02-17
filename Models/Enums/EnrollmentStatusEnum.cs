@@ -1,7 +1,6 @@
 using NpgsqlTypes;
 
-namespace StudentPayments_API.Models
-{
+namespace StudentPayments_API.Models.Enums;
     public enum EnrollmentStatusEnum
     {
         [PgName("Active")]
@@ -9,4 +8,3 @@ namespace StudentPayments_API.Models
         [PgName("Inactive")]
         Inactive
     }
-}

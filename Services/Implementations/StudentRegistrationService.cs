@@ -4,7 +4,7 @@ using StudentPayments_API.Data;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Services.Interfaces;
 using BCrypt.Net;
-
+using StudentPayments_API.Models.Enums;
 namespace StudentPayments_API.Services.Implementations;
 
 //Service that handles business logic for student registration: Enum conversion, duplicate checking, database persistence

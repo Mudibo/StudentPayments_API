@@ -3,7 +3,7 @@ using StudentPayments_API.Models;
 using StudentPayments_API.Data;
 using Microsoft.EntityFrameworkCore;
 using StudentPayments_API.Services.Interfaces;
-
+using StudentPayments_API.Models.Enums;
 namespace StudentPayments_API.Services.Implementations;
 
 public class PaymentService : IPaymentService

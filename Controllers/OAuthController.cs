@@ -52,7 +52,7 @@ public class OAuthController : ControllerBase
         }
 
         //Extract and decode client credentials from the header
-        var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(header.Replace("Basic ", ""))).Split(':');
+        var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(header.Replace("Basic ", ""))).Split(':',2);
         if (credentials.Length != 2)
         {
             return Unauthorized(new OAuthErrorResponseDto
@@ -110,6 +110,11 @@ public class OAuthController : ControllerBase
                     error = ex.Error,
                     error_description = ex.ErrorDescription
                 }),
+                _ => StatusCode(500, new OAuthErrorResponseDto
+                {
+                    error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                    error_description = "An unexpected error occurred during authentication."
+                })
             };
         }
     }

@@ -4,6 +4,7 @@
 namespace StudentPayments_API.Data;
 using Microsoft.EntityFrameworkCore;
 using StudentPayments_API.Models;
+using StudentPayments_API.Models.Enums;
 
 public class StudentPaymentsDbContext : DbContext
 {

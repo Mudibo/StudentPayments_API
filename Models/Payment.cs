@@ -1,6 +1,7 @@
 namespace StudentPayments_API.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using StudentPayments_API.Models.Enums;
 
 //Inform EF Core how c# maps to database
 //Maps Payment entity to payments table in the database

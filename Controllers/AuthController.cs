@@ -8,6 +8,7 @@ using System.Text;
 using System.Security.Claims;
 using StudentPayments_API.Models;
 using StudentPayments_API.Security.Interfaces;
+using StudentPayments_API.Models.Enums;
 
 namespace StudentPayments_API.Controllers;
 
