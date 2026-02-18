@@ -13,6 +13,7 @@ public static class OAuthErrorEnumExtensions
             OAuthErrorEnum.ServerError => "server_error",
             OAuthErrorEnum.UnsupportedGrantType => "unsupported_grant_type",
             OAuthErrorEnum.InvalidRequest => "invalid_request",
+            OAuthErrorEnum.Inactive => "inactive",
             _ => null
         };
     }
