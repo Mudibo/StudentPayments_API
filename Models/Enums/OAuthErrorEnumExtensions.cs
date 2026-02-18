@@ -1,20 +1,21 @@
 
-using StudentPayments_API.Models.Enums;
-
-public static class OAuthErrorEnumExtensions
+namespace StudentPayments_API.Models.Enums
 {
-    public static string ToOAuthErrorString(this OAuthErrorEnum error)
+    public static class OAuthErrorEnumExtensions
     {
-        return error switch
+        public static string ToOAuthErrorString(this OAuthErrorEnum error)
         {
-            OAuthErrorEnum.InvalidClient => "invalid_client",
-            OAuthErrorEnum.InvalidScope => "invalid_scope",
-            OAuthErrorEnum.TemporarilyUnavailable => "temporarily_unavailable",
-            OAuthErrorEnum.ServerError => "server_error",
-            OAuthErrorEnum.UnsupportedGrantType => "unsupported_grant_type",
-            OAuthErrorEnum.InvalidRequest => "invalid_request",
-            OAuthErrorEnum.Inactive => "inactive",
-            _ => null
-        };
+            return error switch
+            {
+                OAuthErrorEnum.InvalidClient => "invalid_client",
+                OAuthErrorEnum.InvalidScope => "invalid_scope",
+                OAuthErrorEnum.TemporarilyUnavailable => "temporarily_unavailable",
+                OAuthErrorEnum.ServerError => "server_error",
+                OAuthErrorEnum.UnsupportedGrantType => "unsupported_grant_type",
+                OAuthErrorEnum.InvalidRequest => "invalid_request",
+                OAuthErrorEnum.Inactive => "inactive",
+                _ => null
+            };
+        }
     }
 }
