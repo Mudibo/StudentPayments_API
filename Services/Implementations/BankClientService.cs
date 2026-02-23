@@ -9,17 +9,21 @@ using StudentPayments_API.Security.Interfaces;
 using StudentPayments_API.Models.Enums;
 using Npgsql;
 using StudentPayments_API.Security.OAuthScopes;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 
 public class BankClientService : IBankClientService
 {
     private readonly StudentPaymentsDbContext _context;
     private readonly ILogger<BankClientService> _logger;
     private readonly ITokenService _tokenService;
-    public BankClientService(StudentPaymentsDbContext context, ILogger<BankClientService> logger, ITokenService tokenService)
+    private readonly IDistributedCache _cache;
+    public BankClientService(StudentPaymentsDbContext context, ILogger<BankClientService> logger, ITokenService tokenService, IDistributedCache cache)
     {
         _context = context;
         _logger = logger;
         _tokenService = tokenService;
+        _cache = cache;
     }
     public async Task<AddBankClientResponseDto> CreateBankClientAsync(CreateBankClientDto dto)
     {
@@ -80,7 +84,30 @@ public class BankClientService : IBankClientService
         }
         
         public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto){
-            try
+        var cacheKey = $"oauth:{dto.ClientId.Trim()}:{dto.Scope?.Trim()}";
+        try
+        {
+            var cached = await _cache.GetStringAsync(cacheKey);
+            if (!string.IsNullOrEmpty(cached))
+            {
+                var cachedToken = JsonConvert.DeserializeObject<CachedOAuthToken>(cached);
+                _logger.LogInformation("OAuth token cache hit for ClientId: {ClientId} with Scope: {Scope}", dto.ClientId.Trim(), dto.Scope);
+                return new OAuthTokenResponseDto
+                {
+                    access_token = cachedToken.AccessToken,
+                    token_type = cachedToken.TokenType,
+                    expires_in = cachedToken.ExpiresIn,
+                    scope = cachedToken.Scope
+                };
+            }else
+            {
+                _logger.LogInformation("OAuth token cache miss for ClientId: {ClientId} with Scope: {Scope}", dto.ClientId.Trim(), dto.Scope);
+            }
+        }catch(Exception ex)
+        {
+            _logger.LogError(ex, "Cache read failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
+        }
+        try
         {
             var client = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == dto.ClientId.Trim() && bc.IsActive);
             if (client == null)
@@ -105,13 +132,32 @@ public class BankClientService : IBankClientService
                 client.ClientId,
                 requestedScopes
             );
-            return new OAuthTokenResponseDto
+            var tokenResponse = new OAuthTokenResponseDto
             {
                 access_token = token.Token,
                 token_type = "Bearer",
                 expires_in = (int)(token.Expiration - DateTime.UtcNow).TotalSeconds,
                 scope = string.Join(" ", requestedScopes)
             };
+            var cacheObject = new CachedOAuthToken
+            {
+                AccessToken = tokenResponse.access_token,
+                TokenType = tokenResponse.token_type,
+                ExpiresIn = tokenResponse.expires_in,
+                Scope = tokenResponse.scope,
+                BankClientId = client.BankClientId
+            };
+            try
+            {
+                await _cache.SetStringAsync(cacheKey, JsonConvert.SerializeObject(cacheObject), new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.expires_in - 30) // Cache slightly less than token lifetime
+                });
+            }catch(Exception ex)
+            {
+                _logger.LogError(ex, "Cache write failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
+            }
+        return tokenResponse;
         }catch(NpgsqlException npgEx)when(npgEx.IsTransient)
         {
             _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
