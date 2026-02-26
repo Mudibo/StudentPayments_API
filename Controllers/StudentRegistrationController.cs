@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using StudentPayments_API.DTOs.Requests;
+using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.Models;
+using StudentPayments_API.Models.Enums;
 using StudentPayments_API.Services.Interfaces;
 
 namespace StudentPayments_API.Controllers;
@@ -8,55 +10,75 @@ namespace StudentPayments_API.Controllers;
 //Controller to receive request, delegate logic to service, and return valid HTTP response.
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/students")]
 public class StudentRegistrationController : ControllerBase
 {
     private readonly IStudentRegistrationService _registrationService;
+    private readonly ILogger<StudentRegistrationController> _logger;
     
     //Constructor receives an implementation of IStudentRegistrationService via Dependency Injection
-    public StudentRegistrationController(IStudentRegistrationService registrationService)
+    public StudentRegistrationController(IStudentRegistrationService registrationService, ILogger<StudentRegistrationController> logger)
     {
         _registrationService = registrationService;
+        _logger = logger;
     }
 
-    //Expose POST endpoint: POST api/StudentRegistration/register
+    //Expose POST endpoint: POST api/students/register
     [HttpPost("register")]
     public async Task<IActionResult> RegisterStudent([FromBody] StudentRegistrationDto dto)
     {
-        //Call RegisterStudentAsync to attempt to register the student
-        var (success, message, student) = await _registrationService.RegisterStudentAsync(dto);
-        if (!success)
+        if (!ModelState.IsValid)
         {
-            if(message.ToLowerInvariant().Contains("admission number already exists",StringComparison.OrdinalIgnoreCase))
+            //Return all validation errors
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new ApiErrorDto
             {
-                //Return a 409 Conflict response if duplicate admission number
-                return Conflict(new
-                {
-                    message
-                });
-            }else if (message.Contains("Invalid", StringComparison.OrdinalIgnoreCase))
-            {
-                //Return 400 Bad Request for validation errors
-                return BadRequest(new
-                {
-                    message
-                });
-            }
-            else
-            {
-                //Return 500 Internal Server Error for unexpected issues
-                return StatusCode(500, new
-                {
-                    message
-                });
-            }
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Validation failed: " + string.Join("; ", errors)
+            });
         }
-        //If registration is successful, return 200 OK with student details
-        return Ok(new
-        {
-            //If registration succeeds, return 200 ok with student details
-            message,
-            student
-        });
+        try {
+            var response = await _registrationService.RegisterStudentAsync(dto);
+            if(response.Success){
+                return Ok(new {
+                    success = response.Success,
+                    message = response.Message,
+                });
+            }else{
+                if(response.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString()){
+                    return StatusCode(409, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.Conflict.ToOAuthErrorString(),
+                        error_description = response.Message
+                    });
+                }else if(response.Error == OAuthErrorEnum.InvalidRequest.ToOAuthErrorString()){
+                    return BadRequest(new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                        error_description = response.Message
+                    });
+                }else if(response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()){
+                    return StatusCode(503, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                        error_description = response.Message
+                    });
+                }else{
+                    return StatusCode(500, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                        error_description = response.Message
+                    });
+                }
+            }
+        }catch(Exception ex){
+            _logger.LogError(ex, "An unexpected error occurred during student registration.");
+            return StatusCode(500, new ApiErrorDto
+            {
+                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                error_description = "An unexpected error occurred. Please try again later."
+            });
+        }
     }
 }
+

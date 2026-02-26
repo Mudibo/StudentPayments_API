@@ -3,6 +3,9 @@ using StudentPayments_API.Models;
 using StudentPayments_API.Data;
 using StudentPayments_API.DTOs.Requests;
 using StudentPayments_API.Services.Interfaces;
+using StudentPayments_API.DTOs.Responses;
+using StudentPayments_API.Models.Enums;
+using StudentPayments_API.Utils;
 using BCrypt.Net;
 using StudentPayments_API.Models.Enums;
 namespace StudentPayments_API.Services.Implementations;
@@ -20,90 +23,108 @@ public class StudentRegistrationService : IStudentRegistrationService
         _context = context;
         _logger = logger;
     }
-
-    //Method to convert string to enum member based on PgName attribute
-    private static bool TryParseEnumMember<TEnum>(string value, out TEnum result) where TEnum : struct
+    public async Task<StudentRegistrationResponseDto> RegisterStudentAsync(StudentRegistrationDto dto)
+    {
+        //Trim all string fields
+        dto.AdmissionNumber = dto.AdmissionNumber?.Trim();
+        dto.FirstName = dto.FirstName?.Trim();
+        dto.LastName = dto.LastName?.Trim();
+        dto.Email = dto.Email?.Trim();
+        dto.MobileNumber = dto.MobileNumber?.Trim();
+        dto.Program = dto.Program?.Trim();
+        dto.EnrollmentStatus = dto.EnrollmentStatus?.Trim();
+        dto.Password = dto.Password?.Trim();
+        try
         {
-        foreach (var field in typeof(TEnum).GetFields())
-            {
-                var attribute = Attribute.GetCustomAttribute(field, typeof(NpgsqlTypes.PgNameAttribute)) as NpgsqlTypes.PgNameAttribute;
-                    if (attribute != null)
-                    {
-                        if (string.Equals(attribute.PgName, value, StringComparison.OrdinalIgnoreCase))
-                            {
-                                result = (TEnum)field.GetValue(null);
-                                    return true;
-                            }                   
-                    }
-                    else
-                    {
-                        if (string.Equals(field.Name, value, StringComparison.OrdinalIgnoreCase))
-                            {
-                                result = (TEnum)field.GetValue(null);
-                                    return true;
-                            }
-                    }
-                }
-                    result = default;
-                    return false;
-        }
-    public async Task<(bool success, string message, Student? student)> RegisterStudentAsync(StudentRegistrationDto dto){
-        try {
             //Check for duplicate admission number
-            if(await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim()))
-            {
-                _logger.LogWarning("Attempted to register duplicate student with admission number: {admissionNumber}", dto.AdmissionNumber.Trim());
-                return (false, "A student with the same admission number already exists", null);
+            if(await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())){
+                _logger.LogWarning("Attempting to register a student with a duplicate admission number: {AdmissionNumber}", dto.AdmissionNumber);
+                return new StudentRegistrationResponseDto
+                {
+                    Success = false,
+                    Message = "Admission Number already exists.",
+                    Error = OAuthErrorEnum.Conflict.ToOAuthErrorString()
+                };
             }
-            //Validate and parse Program enum
-            if (!TryParseEnumMember<ProgramEnum>(dto.Program, out var programEnum))
-            {
-                _logger.LogWarning("Invalid program value: {program} for AdmissionNumber: {AdmissionNumber}", dto.Program, dto.AdmissionNumber.Trim());
-                return (false, "Invalid program value.", null);
+            if(!EnumParse.TryParseEnumMember<ProgramEnum>(dto.Program, out var programEnum)){
+                _logger.LogWarning("Invalid Program Value: {program}", dto.Program);
+                return new StudentRegistrationResponseDto {
+                    Success = false,
+                    Message = "Invalid Program value.",
+                    Error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString()
+                };
             }
-            //Validate and parse EnrollmentStatus enum
-            if(!TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum))
-            {
-                _logger.LogWarning("Invalid enrollment status value: {enrollmentStatus} for AdmissionNumber: {AdmissionNumber}", dto.EnrollmentStatus, dto.AdmissionNumber.Trim());
-                return (false, "Invalid enrollment status value.", null);
+            if(!EnumParse.TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum)){
+                _logger.LogWarning("Invalid Enrollment Status Value: {enrollmentStatus}", dto.EnrollmentStatus);
+                return new StudentRegistrationResponseDto {
+                    Success = false,
+                    Message = "Invalid Enrollment Status value.",
+                    Error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString()
+                };
             }
             var trimmedPassword = dto.Password.Trim();
-            //Hash the password before storing in the database
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(trimmedPassword);
-           
+
             var student = new Student 
             {
                 AdmissionNumber = dto.AdmissionNumber.Trim(),
                 FirstName = dto.FirstName.Trim(),
                 LastName = dto.LastName.Trim(),
-                Email = dto.Email.Trim(),
+                Email = dto.Email,
                 MobileNumber = dto.MobileNumber.Trim(),
                 Program = programEnum,
                 EnrollmentStatus = enrollmentStatusEnum,
-                ExternalID = dto.ExternalID,
+                PasswordHash = passwordHash,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-                PasswordHash = passwordHash,
                 Role = "Student"
             };
-
-            _context.Students.Add(student);
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Student registered successfully with AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber.Trim());
-            return (true, "Student Registered Successfully", student);
-
-        } catch (DbUpdateException dbEx) {
-            _logger.LogError(dbEx, "A database error occurred while registering the student");
-            if(dbEx.InnerException?.Message.Contains("unique", StringComparison.OrdinalIgnoreCase) == true || 
-                dbEx.InnerException?.Message.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true)
+            try{
+                _context.Students.Add(student);
+                await _context.SaveChangesAsync();
+            }catch(DbUpdateException dbEx){
+                _logger.LogError("A database Error occurred while tring to register Admission Number: {Admission Number}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", student.AdmissionNumber, dbEx.GetType().Name, dbEx.StackTrace);
+                return new StudentRegistrationResponseDto
+                {
+                    Success = false,
+                    Message = "A database error occurred while trying to register the student.",
+                    Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()
+                };
+            }catch(Exception ex)
             {
-                return (false, "A student with the same admission number already exists.", null);
+                _logger.LogError("An unexpected error occurred while trying to register Admission Number: {Admission Number}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", student.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
+                return new StudentRegistrationResponseDto
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred while trying to register the student.",
+                    Error = OAuthErrorEnum.ServerError.ToOAuthErrorString()
+                };
             }
-            return (false, "A database error occurred while registering the student.",null);
-        } catch (Exception ex){
-            _logger.LogError(ex, "An unexpected error occurred while registering the student");
-            return (false, "An unexpected error occurred while registering the student.", null);
+            return new StudentRegistrationResponseDto
+            {
+                Success = true,
+                Message = "Student registered successfully.",
+                Error = OAuthErrorEnum.None.ToOAuthErrorString()
+            };
+        }catch(DbUpdateException dbEx)
+        {
+            _logger.LogError("A database error occurred while trying to register a student. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dbEx.GetType().Name, dbEx.StackTrace);
+            return new StudentRegistrationResponseDto
+            {
+                Success = false,
+                Message = "A database error occurred while trying to register the student.",
+                Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()
+            };
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError("An unexpected error occurred while trying to register a student. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
+            return new StudentRegistrationResponseDto
+            {
+                Success = false,
+                Message = "An unexpected error occurred while trying to register the student.",
+                Error = OAuthErrorEnum.ServerError.ToOAuthErrorString()
+            };
         }
     }
 }
