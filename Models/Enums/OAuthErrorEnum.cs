@@ -7,8 +7,10 @@ namespace StudentPayments_API.Models.Enums
         InvalidScope,
         TemporarilyUnavailable,
         ServerError,
+        NotFound, 
         UnsupportedGrantType,
         Inactive,
+        Conflict,
         InvalidRequest
     }
 }
