@@ -33,9 +33,6 @@ public class Student
     [Column("enrollment_status")]
     public EnrollmentStatusEnum EnrollmentStatus { get; set; }
 
-    [Column("external_student_id")]
-    public string? ExternalID { get; set; }
-
     [Column("created_at")]
     public DateTime CreatedAt {get; set;}
 
