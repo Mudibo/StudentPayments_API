@@ -9,47 +9,87 @@ using System.Security.Claims;
 using StudentPayments_API.Models;
 using StudentPayments_API.Security.Interfaces;
 using StudentPayments_API.Models.Enums;
+using StudentPayments_API.Services.Interfaces;
+using StudentPayments_API.DTOs.Responses;
 
 namespace StudentPayments_API.Controllers;
 
-[ApiController] //Inform ASP.NET Core that this is an API controller
-[Route("api/[controller]")] //Base route for this controller (/api/Auth)
+[ApiController] 
+[Route("api/auth")] 
 public class AuthController : ControllerBase
 {
-    private readonly StudentPaymentsDbContext _context; //Hold a reference to the db
-    private readonly ITokenService _tokenService;
+    private readonly IAuthService _authService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(StudentPaymentsDbContext context, ITokenService tokenService)
+    public AuthController(IAuthService authService, ILogger<AuthController> logger)
     {
-        _context = context; //Inject the database context
-        _tokenService = tokenService; //Inject the configuration system which are saved in the private fields
+        _authService = authService;
+        _logger = logger;
     }
-    [HttpPost("login")] //Define a POST endpoint (/api/Auth/login)
-    public async Task<ActionResult> Login([FromBody] LoginDto dto)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] AuthRequestDto dto)
     {
-        var admissionNumber = dto.AdmissionNumber.Trim();
-        var student = await _context.Students.FirstOrDefaultAsync(s => s.AdmissionNumber == admissionNumber); //Query Students table for a student with the provided admission number
-        if (student == null)
+        if(!ModelState.IsValid)
         {
-            return Unauthorized(new {
-                message = "Invalid Credentials"
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new ApiErrorDto
+            {
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = "Validation failed: " + string.Join("; ", errors)
             });
         }
-        if(student.EnrollmentStatus != EnrollmentStatusEnum.Active)
+        try
         {
-            //Return Http 401 Unauthorized if enrollment status is not active
-            return Unauthorized(new {
-                message = "Your enrollment status is not active. Login is not permitted."
+            var response = await _authService.AuthenticateAsync(dto);
+            if (response.success)
+            {
+                return Ok(response);
+            }
+            else
+            {
+                if(response.error == OAuthErrorEnum.InvalidClient.ToOAuthErrorString())
+                {
+                    return Unauthorized(new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
+                        error_description = "Invalid credentials"
+                    });
+                }
+                else if(response.error == OAuthErrorEnum.Inactive.ToOAuthErrorString())
+                {
+                    return Unauthorized(new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.Inactive.ToOAuthErrorString(),
+                        error_description = "Student account is inactive."
+                    });
+                }
+                else if(response.error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                {
+                    return StatusCode(503, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                        error_description = "A database error occurred during authentication. Please try again."
+                    });
+                }
+                else
+                {
+                    return StatusCode(500, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                        error_description = "An unexpected error occurred during authentication. Please try again later."
+                    });
+                }
+            }
+        }catch(Exception ex)
+        {
+            _logger.LogError("An unexpected error occurred during authentication. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
+            return StatusCode(500, new ApiErrorDto
+            {
+                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                error_description = "An unexpected error occurred during authentication. Please try again later."
             });
         }
-        if(!BCrypt.Net.BCrypt.Verify(dto.Password.Trim(), student.PasswordHash))
-        {
-            //Return Http 401 Unauthorized if password does not match
-            return Unauthorized(new {
-                message = "Invalid Credentials."
-            });
-        }
-        var tokenResponse = _tokenService.GenerateToken(student);
-        return Ok(tokenResponse);
     }
+    
+        
 }
