@@ -26,10 +26,7 @@ public class TokenService : ITokenService
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, student.StudentId.ToString()),
             new Claim("admissionNumber", student.AdmissionNumber),
-            new Claim("program", student.Program.ToString()),
-            new Claim("mobileNumber", student.MobileNumber),
             new Claim(ClaimTypes.Role, student.Role)
         };
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -46,7 +43,7 @@ public class TokenService : ITokenService
         return new TokenResponseDto
         {
             Token = tokenHandler.WriteToken(token),
-            Expiration = expires    ,
+            Expiration = expires,
             Role = student.Role                    
         };
     }
@@ -82,9 +79,9 @@ public class TokenService : ITokenService
     {
         var claims = new List<Claim>
         {
-            new Claim("client_id", clientId),
-            new Claim("scope", string.Join(' ', scopes))
+            new Claim("client_id", clientId)
         };
+        claims.AddRange(scopes.Select(scope => new Claim("scope", scope)));
         var expires = DateTime.UtcNow.AddMinutes(15);
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],
