@@ -6,6 +6,7 @@ using StudentPayments_API.DTOs.Responses;
 using StudentPayments_API.Models;
 using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.Data;
+using StudentPayments_API.Models.Enums;
 
 namespace StudentPayments_API.Services.Implementations;
 
@@ -18,51 +19,58 @@ public class StudentDuesService : IStudentDuesService
         _context = context;
         _logger = logger;
     }
-    public async Task<AddStudentDuesResponseDto<StudentDues>> AddDuesAsync(AddStudentDuesDto dto)
+    public async Task<AddStudentDuesResponseDto> AddDuesAsync(AddStudentDuesDto dto)
     {
         try
         {
-            var response = new AddStudentDuesResponseDto<StudentDues>();
-        var student = await _context.Students.FirstOrDefaultAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim());
-        if(student == null)
-        {
-            response.Success = false;
-            response.Message = "Student not found for the given admission number.";
-            response.Data = null;
-            return response;
-        }
-        var dues = new StudentDues
-        {
-            StudentId = student.StudentId,
-            DuesAmount = dto.DuesAmount,
-            DuesType = dto.DuesType,
-            EffectiveDate = dto.EffectiveDate,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow            
-        };
-        _context.StudentDues.Add(dues);
-        await _context.SaveChangesAsync();
+            var studentData = await _context.Students
+                .Where(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())
+                .Select(s => new { s.AdmissionNumber, s.StudentId })
+                .FirstOrDefaultAsync();
+            if(studentData == null)
+            {
+                return new AddStudentDuesResponseDto
+                {
+                    Success = false,
+                    Message = $"No student found with Admission Number: {dto.AdmissionNumber}",
+                    Error = OAuthErrorEnum.NotFound.ToOAuthErrorString()
+                };
+            }
+            var dues = new StudentDues
+            {
+                StudentId = studentData.StudentId,
+                DuesAmount = dto.DuesAmount,
+                DuesType = dto.DuesType,
+                EffectiveDate = DateTime.SpecifyKind(dto.EffectiveDate, DateTimeKind.Utc),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow            
+            };
+            _context.StudentDues.Add(dues);
+            await _context.SaveChangesAsync();
 
-        response.Success = true;
-        response.Message = "Student dues added successfully.";
-        response.Data = dues;
-        return response;
+            return new AddStudentDuesResponseDto
+            {
+                Success = true,
+                Message = $"Dues added successfully for Admission Number: {dto.AdmissionNumber}"
+            };
         }catch(DbUpdateException dbEx)
         {
-            var response = new AddStudentDuesResponseDto<StudentDues>();
-            response.Success = false;
-            response.Message = "A database error occurred while adding student dues.";
-            response.Data = null;
-            _logger.LogError(dbEx, "Database error occurred while adding dues for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
-            return response;
+            _logger.LogError(dbEx, "Database error occurred while adding dues for AdmissionNumber: {AdmissionNumber}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, dbEx.GetType().Name, dbEx.StackTrace);
+            return new AddStudentDuesResponseDto
+            {
+                Success = false,
+                Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                Message = "A database error occurred while adding student dues. Please try again."
+            };       
         }catch(Exception ex)
         {
-            var response = new AddStudentDuesResponseDto<StudentDues>();
-            response.Success = false;
-            response.Message = "An unexpected error occurred while adding student dues.";
-            response.Data = null;
-            _logger.LogError(ex, "An unexpected error occurred while adding dues for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
-            return response;
+            _logger.LogError("An unexpected error occurred while adding dues for AdmissionNumber: {AdmissionNumber}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
+            return new AddStudentDuesResponseDto
+            {
+                Success = false,
+                Error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                Message = $"An unexpected error occurred while adding student dues: {ex.Message}. Please try again."
+            };
         }
     }
     public async Task<decimal> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto)

@@ -7,6 +7,6 @@ namespace StudentPayments_API.Services.Interfaces;
 
 public interface IStudentDuesService
 {
-    Task<AddStudentDuesResponseDto<StudentDues>> AddDuesAsync(AddStudentDuesDto dto);
+    Task<AddStudentDuesResponseDto> AddDuesAsync(AddStudentDuesDto dto);
     Task<decimal> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto);
 }
