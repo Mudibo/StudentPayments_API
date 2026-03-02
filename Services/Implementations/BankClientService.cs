@@ -35,6 +35,7 @@ public class BankClientService : IBankClientService
                 return new AddBankClientResponseDto
                 {
                     Success = false,
+                    Error = OAuthErrorEnum.Conflict.ToOAuthErrorString(),
                     Message = "A bank client with the same Client ID already exists."
                 };
             } 
@@ -61,10 +62,11 @@ public class BankClientService : IBankClientService
         }
         catch(DbUpdateException dbEx)
         {
-            _logger.LogError(dbEx, "Database error while creating bank client with BankName: {BankName}", dto.BankName.Trim());
+            _logger.LogError("Database error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.BankName.Trim(), dbEx.GetType().FullName, dbEx.StackTrace);
             return new AddBankClientResponseDto
             {
                 Success = false,
+                Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
                 Message = "A database error occurred while creating the bank client.",
                 BankName = null,
                 IsActive = false
@@ -72,10 +74,11 @@ public class BankClientService : IBankClientService
         } 
         catch(Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while creating bank client with BankName: {BankName}", dto.BankName.Trim());
+            _logger.LogError("Unexpected error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.BankName.Trim(), ex.GetType().FullName, ex.StackTrace);
             return new AddBankClientResponseDto
             {
                 Success = false,
+                Error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
                 Message = "An unexpected error occurred while creating the bank client.",
                 BankName = null,
                 IsActive = false
@@ -85,6 +88,7 @@ public class BankClientService : IBankClientService
         
         public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto){
         var cacheKey = $"oauth:{dto.ClientId.Trim()}:{dto.Scope?.Trim()}";
+        var clientIdToBankClientIdKey = $"oauth:clientid-to-bankclientid:{dto.ClientId.Trim()}";
         try
         {
             var cached = await _cache.GetStringAsync(cacheKey);
@@ -153,6 +157,15 @@ public class BankClientService : IBankClientService
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(tokenResponse.expires_in - 30) // Cache slightly less than token lifetime
                 });
+                // Also cache clientId-to-bankClientId mapping for PaymentNotificationService
+                await _cache.SetStringAsync(
+                    clientIdToBankClientIdKey,
+                    client.BankClientId.ToString(),
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                    }
+                );
             }catch(Exception ex)
             {
                 _logger.LogError(ex, "Cache write failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
