@@ -22,7 +22,7 @@ public class StudentService : IStudentService
     {
         try
         {
-            var query =  _context.Students.AsNoTracking();
+            var query =  _context.Students.AsNoTracking().Where(s => s.Role == Models.Enums.UserRole.Student);
             var totalCount = await query.CountAsync();
             var students = await query
                 .OrderBy(s => s.StudentId)
