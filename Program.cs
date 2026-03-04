@@ -16,6 +16,7 @@ using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
 using AspNetCoreRateLimit.Redis;
 using Microsoft.AspNetCore.HttpOverrides;
+using Serilog.Sinks.Async;
 using AspNetCoreRateLimit.Redis;
 using StudentPayments_API.Models.Enums;
 // Register the enum mapping globally for Npgsql
@@ -29,22 +30,18 @@ foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVari
 }
 
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.Async(a => a.Console())
+    .WriteTo.Async(a => a.File("Logs/log-.txt", rollingInterval: RollingInterval.Day))
     .CreateLogger();
 
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
-builder.Services.AddControllers().AddJsonOptions(options =>
-{
-    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-});
 // Print the connection string for debugging
 Console.WriteLine("Loaded connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
-
+builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -82,6 +79,7 @@ builder.Services.AddSwaggerGen(options =>
             new string[] {}
         }
     });
+    options.OperationFilter<StudentPayments_API.Swagger.IdempotencyKeyHeaderOperationFilter>();
     // Register BasicAuthOperationFilter for OAuth token endpoint
     options.OperationFilter<StudentPayments_API.Swagger.BasicAuthOperationFilter>();
 });
@@ -90,25 +88,46 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddScoped<IStudentDuesService, StudentDuesService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+});
+
 builder.Services.AddScoped<IStudentRegistrationService, StudentRegistrationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IStudentValidationService, StudentValidationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+/*builder.Services.AddScoped<IPaymentIntentService, PaymentIntentService>(); */
+
+// Register PaymentNotificationService for DI
+builder.Services.AddScoped<IPaymentNotificationService, PaymentNotificationService>();
 
 // Register Npgsql enum mapping using NpgsqlDataSourceBuilder (Npgsql 7+/8+)
 var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 // Map all PostgreSQL enums to C# enums
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.EnrollmentStatusEnum>("public.enrollment_enum");
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.ProgramEnum>("public.program_enum");
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentTypeEnum>("public.payment_type_enum");
-dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentChannelEnum>("public.payment_channel_enum");
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.EnrollmentStatusEnum>();
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.ProgramEnum>();
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentTypeEnum>();
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentChannelEnum>();
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.IdempotencyResourceTypeEnum>();
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.PaymentTransactionStatusEnum>();
+dataSourceBuilder.MapEnum<StudentPayments_API.Models.Enums.CurrencyEnum>();
 var dataSource = dataSourceBuilder.Build();
 builder.Services.AddSingleton(dataSource);
 builder.Services.AddDbContext<StudentPaymentsDbContext>(options =>
-    options.UseNpgsql(dataSource));
+    options.UseNpgsql(dataSource, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5, // Number of retries
+            maxRetryDelay: TimeSpan.FromSeconds(10), // Delay between retries
+            errorCodesToAdd: null //default transient errors
+        );
+        npgsqlOptions.CommandTimeout(120); // Set command timeout to 120 seconds
+    })
+);
 builder.Services.AddScoped<IBankClientService, BankClientService>();
 
 //Configure token validation
@@ -130,7 +149,9 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("StudentValidation", policy => policy.RequireClaim("scope", OAuthScopes.StudentValidate));
+    options.AddPolicy("PaymentIntent", policy => policy.RequireClaim("scope", OAuthScopes.PaymentIntent));
 });
+
 
 //Register the student validation service
 builder.Services.AddScoped<StudentPayments_API.Services.Interfaces.IStudentValidationService, StudentPayments_API.Services.Implementations.StudentValidationService>();
@@ -171,4 +192,3 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 app.Run();
-
