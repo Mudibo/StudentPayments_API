@@ -1,10 +1,10 @@
 using NpgsqlTypes;
-
+using System.Runtime.Serialization;
 namespace StudentPayments_API.Models.Enums;
     public enum EnrollmentStatusEnum
     {
-        [PgName("Active")]
+        [EnumMember(Value = "Active")]
         Active,
-        [PgName("Inactive")]
+        [EnumMember(Value = "Inactive")]
         Inactive
     }

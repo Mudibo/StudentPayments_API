@@ -1,11 +1,12 @@
 namespace StudentPayments_API.Models.Enums;
 using NpgsqlTypes;
+using System.Runtime.Serialization;
 public enum ProgramEnum
 {
-    [PgName("Computer Science")]
+    [EnumMember(Value = "Computer Science")]
     ComputerScience,
-    [PgName("Law")]
+    [EnumMember(Value = "Law")]
     Law,
-    [PgName("International Relations")]
+    [EnumMember(Value = "International Relations")]
     InternationalRelations
 }
