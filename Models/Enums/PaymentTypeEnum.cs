@@ -1,14 +1,14 @@
 using Npgsql;
 using NpgsqlTypes;
-
+using System.Runtime.Serialization;
 namespace StudentPayments_API.Models.Enums;
 
 public enum PaymentTypeEnum
 {
-    [PgName("cash")]
+    [EnumMember(Value = "cash")]
     Cash,
-    [PgName("check")]
+    [EnumMember(Value = "check")]
     Check,
-    [PgName("pesalink")]
+    [EnumMember(Value = "pesalink")]
     Pesalink
 }

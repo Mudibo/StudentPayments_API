@@ -1,9 +1,11 @@
+using NpgsqlTypes;
+using System.Runtime.Serialization;
 namespace StudentPayments_API.Models.Enums;
 
 public enum PaymentTransactionStatusEnum
 {
-    PENDING,
+    [EnumMember(Value = "SUCCESS")]
     SUCCESS,
+    [EnumMember(Value = "FAILED")]
     FAILED,
-    CANCELLED
 }

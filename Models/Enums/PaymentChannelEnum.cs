@@ -1,12 +1,12 @@
 using Npgsql;
 using NpgsqlTypes;
-
+using System.Runtime.Serialization;
 namespace StudentPayments_API.Models.Enums;
 
 public enum PaymentChannelEnum
 {
-    [PgName("Mobile Banking")]
+    [EnumMember(Value = "Mobile Banking")]
     MobileBanking,
-    [PgName("Internet Banking")]
+    [EnumMember(Value = "Internet Banking")]
     InternetBanking
 }
