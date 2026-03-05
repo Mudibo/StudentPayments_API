@@ -13,7 +13,6 @@ public class StudentPaymentsDbContext : DbContext
     : base(options) {}
     
     public DbSet<Student> Students { get; set; } //DbSet<t> represents a table in the database
-    public DbSet<Payment> Payments { get; set; } //DbSet<t> represents a table in the database
     public DbSet<StudentDues> StudentDues { get; set; }
     public DbSet<BankClient> BankClients { get; set; }
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
