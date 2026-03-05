@@ -8,8 +8,7 @@ using StudentPayments_API.Services.Interfaces;
 using System.Threading.Tasks;
 
 [ApiController]
-[Route("api/[controller]")]
-
+[Route("api/bankclients")]
 public class BankClientsController : ControllerBase
 {
     private readonly IBankClientService _bankClientService;
