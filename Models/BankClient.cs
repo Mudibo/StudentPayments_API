@@ -9,11 +9,16 @@ public class BankClient
 {
     [Key]
     public int BankClientId {get; set;}
+    [Required, MaxLength(50)]
     public string ClientId {get; set;}
+    [Required, MaxLength(255)]
     public string ClientSecretHash {get;set;}
+    [Required, MaxLength(100)]
     public string BankName {get;set;}
+    [Required]
     public bool IsActive {get;set;}
     public DateTime CreatedAt {get;set;}
+    [MaxLength(255)]
     public string AllowedScopes {get;set;}
 
     [NotMapped]

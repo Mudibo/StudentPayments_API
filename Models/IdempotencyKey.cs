@@ -8,9 +8,13 @@ public class IdempotencyKey
 {
     [Key]
     public int Id {get;set;}
+    [Required]
     public int BankClientId {get;set;}
+    [Required, MaxLength(100)]
     public string Key {get;set;}
+    [Required, MaxLength(255)]
     public string RequestHash {get;set;}
+    [Required]
     public IdempotencyResourceTypeEnum ResourceType {get;set;}
     public DateTime CreatedAt {get;set;}
     public BankClient BankClient {get;set;}
