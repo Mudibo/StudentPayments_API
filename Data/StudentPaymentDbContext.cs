@@ -51,6 +51,9 @@ public class StudentPaymentsDbContext : DbContext
         modelBuilder.Entity<StudentDues>()
             .HasKey(sd => sd.DueId);
         modelBuilder.Entity<StudentDues>()
+            .Property(sd => sd.DuesType)
+            .HasConversion<string>();
+        modelBuilder.Entity<StudentDues>()
             .ToTable(t => t.HasCheckConstraint("CK_StudentDues_DuesAmount", "\"DuesAmount\" >= 0"))
             .ToTable(t => t.HasCheckConstraint("CK_StudentDues_DueType", "\"DuesType\" IN ('Tuition', 'Hostel', 'Library', 'Lab', 'Sports', 'Other')"));
 
