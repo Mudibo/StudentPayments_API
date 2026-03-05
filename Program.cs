@@ -96,7 +96,6 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 builder.Services.AddScoped<IStudentRegistrationService, StudentRegistrationService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IStudentValidationService, StudentValidationService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 /*builder.Services.AddScoped<IPaymentIntentService, PaymentIntentService>(); */
@@ -148,8 +147,8 @@ builder.Services.AddAuthentication("Bearer")
 //Only allow access to student validation endpoint if the token has the correct scope claim
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("StudentValidation", policy => policy.RequireClaim("scope", OAuthScopes.StudentValidate));
-    options.AddPolicy("PaymentIntent", policy => policy.RequireClaim("scope", OAuthScopes.PaymentIntent));
+    options.AddPolicy("StudentValidation", policy => policy.RequireClaim("scope", OAuthScopeEnum.StudentValidate));
+    options.AddPolicy("PaymentNotification", policy => policy.RequireClaim("scope", OAuthScopeEnum.PaymentNotification));
 });
 
 
