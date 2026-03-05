@@ -45,6 +45,7 @@ public class BankClientService : IBankClientService
                 ClientId = dto.ClientId.Trim(),
                 ClientSecretHash = secretHash,
                 BankName = dto.BankName.Trim(),
+                AllowedScopes = dto.AllowedScopes != null ? string.Join(' ', dto.AllowedScopes) : "",
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
@@ -124,13 +125,17 @@ public class BankClientService : IBankClientService
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", dto.ClientId.Trim());
                 throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
-            //Validate requested scopes against allowed scopes
-            var allowedScopes = OAuthScopes.All;
-            var requestedScopes = dto.Scope?.Split(' ') ?? Array.Empty<string>();
-            if(requestedScopes.Any(s => !allowedScopes.Contains(s)))
+            // Validate requested scopes against allowed scopes using OAuthScopeEnum
+            var requestedScopes = dto.Scope?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            var allowedScopes = client.AllowedScopeList;
+
+            foreach (var reqScope in requestedScopes)
             {
-                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", dto.ClientId.Trim(), dto.Scope);
-                throw new OAuthException(OAuthErrorEnum.InvalidScope, "Invalid scope");
+                if (!allowedScopes.Contains(reqScope))
+                {
+                    _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", dto.ClientId.Trim(), reqScope);
+                    throw new OAuthException(OAuthErrorEnum.InvalidScope, $"Invalid scope: {reqScope}");
+                }
             }
             var token = _tokenService.GenerateOAuthToken(
                 client.ClientId,
