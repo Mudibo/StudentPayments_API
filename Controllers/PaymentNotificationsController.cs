@@ -68,6 +68,9 @@ public class PaymentNotificationsController : ControllerBase
             }else if(result.Error == OAuthErrorEnum.InvalidClient.ToOAuthErrorString())
             {
                 return Unauthorized(result);
+            }else if(result.Error == OAuthErrorEnum.Unauthorized.ToOAuthErrorString())
+            {
+                return Unauthorized(result);
             }else if(result.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString())
             {
                 return Conflict(result);
@@ -82,6 +85,72 @@ public class PaymentNotificationsController : ControllerBase
             return StatusCode(500, new
             {
                 error = "An error occurred while processing the payment notification."
+            });
+        }
+    }
+
+    [Authorize(Policy = "PaymentNotification")]
+    [HttpGet("{admissionNumber}/notifications")]
+    public async Task<IActionResult> GetStudentPayments(
+        [FromRoute] string admissionNumber,
+        [FromQuery] int page,
+        [FromQuery] int pageSize
+    )
+    {
+        if(!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new ApiErrorDto
+            {
+                error = "Validation failed",
+                error_description = string.Join("; ", errors)
+            });
+        }
+        //Extract clientId from token
+        var clientId = User.FindFirst("client_id")?.Value;
+        if (string.IsNullOrEmpty(clientId))
+        {
+            _logger.LogWarning("Missing client_id claim in token.");
+            return Unauthorized(new ApiErrorDto
+            {
+                error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
+                error_description = "The token provided is not valid"
+            });
+        }
+        
+        //Enforce max page size
+        if (pageSize > 20) pageSize = 20;
+        if(page < 1) page = 1;
+
+        var dto = new GetStudentPaymentsRequestDto
+        {
+            AdmissionNumber = admissionNumber,
+            Page = page,
+            PageSize = pageSize
+        };
+        try
+        {
+            var result = await _paymentNotificationService.GetStudentPaymentNotificationsAsync(dto);
+            if (result.TotalCount > 0)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                return NotFound(new ApiErrorDto
+                {
+                    error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
+                    error_description = "No payment notifications found for the specified student and."
+                });
+            }
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving student payments. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
+            return StatusCode(500, new ApiErrorDto
+            {
+                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                error_description = ex.Message
             });
         }
     }

@@ -6,4 +6,5 @@ namespace StudentPayments_API.Services.Interfaces;
 public interface IPaymentNotificationService
 {
     Task<PaymentNotificationResponseDto> ProcessNotificationAsync(PaymentNotificationRequestDto dto, string idempotencyKey, string clientId);
+    Task<PaginatedResultDto<GetStudentPaymentNotificationResponseDto>> GetStudentPaymentNotificationsAsync(GetStudentPaymentsRequestDto dto);
 }
