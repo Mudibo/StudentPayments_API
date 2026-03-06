@@ -79,10 +79,10 @@ public class StudentDuesService : IStudentDuesService
             .Where(d => d.StudentId == dto.StudentId)
             .SumAsync(d => d.DuesAmount);
 
-        var totalPaid = await _context.Payments
+        var totalPaid = await _context.PaymentTransactions
             .Where(p => p.StudentId == dto.StudentId)
             .SumAsync(p => p.Amount);
 
         return totalDues - totalPaid;
     }
-}
+} 
