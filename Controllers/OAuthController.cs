@@ -75,7 +75,7 @@ public class OAuthController : ControllerBase
         try
         {
             var result = await _bankClientService.AuthenticateOAuthClientAsync(dto);
-            return Ok(result);
+                return Ok(result);
         }catch(OAuthException ex)
         {
             return ex.Error switch

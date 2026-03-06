@@ -35,7 +35,8 @@ public class StudentValidationService : IStudentValidationService
                     Status = StudentValidationStatus.Error,
                     Message = "Admission number is required",
                     StudentName = null,
-                    Program = null
+                    Program = null,
+                    StudentId = null
                 };
             }
             string normalizedAdmissionNumber = dto.AdmissionNumber.Trim();
@@ -65,6 +66,8 @@ public class StudentValidationService : IStudentValidationService
                 .Select(s => new
                 {
                     s.FirstName,
+                    s.AdmissionNumber,
+                    s.StudentId,
                     s.LastName,
                     s.Program,
                     s.EnrollmentStatus
@@ -77,7 +80,8 @@ public class StudentValidationService : IStudentValidationService
                     Status = StudentValidationStatus.NotFound,
                     Message = "Student not found",
                     StudentName = null,
-                    Program = null
+                    Program = null,
+                    StudentId = null
                 };
                 try
                 {
@@ -101,16 +105,19 @@ public class StudentValidationService : IStudentValidationService
                     Status = StudentValidationStatus.Inactive,
                     Message = "Student enrollment status is not active",
                     StudentName = null,
-                    Program = null
+                    Program = null,
+                    StudentId = null
                 };
             }else{
                 _logger.LogInformation("Student with AdmissionNumber: {AdmissionNumber} is valid.", dto.AdmissionNumber);
                 response = new StudentValidationResponseDto
                 {
                     Status = StudentValidationStatus.Valid,
+                    AdmissionNumber = student.AdmissionNumber,
                     Message = "Student validated successfully",
                     StudentName = $"{student.FirstName} {student.LastName}",
-                    Program = student.Program.ToString()
+                    Program = student.Program.ToString(),
+                    StudentId = student.StudentId
                 };
             }
             //Cache the result
