@@ -111,8 +111,8 @@ public class PaymentNotificationService : IPaymentNotificationService
                 return new PaymentNotificationResponseDto
                 {
                     Success = false,
-                    Error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
-                    Message = "Student not found",
+                    Error = OAuthErrorEnum.Unauthorized.ToOAuthErrorString(),
+                    Message = "Unauthorized: Student not found and thus payment cannot be associated with any student record",
                     TransactionUuid = null,
                     Status = null
                 };
@@ -243,4 +243,134 @@ public class PaymentNotificationService : IPaymentNotificationService
             }
         });
     }
-}  
+
+    public async Task<PaginatedResultDto<GetStudentPaymentNotificationResponseDto>> GetStudentPaymentNotificationsAsync(GetStudentPaymentsRequestDto dto)
+    {
+        var studentCacheKey = $"student:validation:{dto.AdmissionNumber.Trim()}";
+        int? studentId = null;
+        try
+        {
+            var cachedStudent = await _cache.GetStringAsync(studentCacheKey);
+            if (!string.IsNullOrEmpty(cachedStudent))
+            {
+                var cachedValidation = System.Text.Json.JsonSerializer.Deserialize<StudentValidationResponseDto>(cachedStudent);
+                if(cachedValidation != null && cachedValidation.Status == StudentValidationStatus.Valid)
+                {
+                    studentId = cachedValidation.StudentId;
+                    _logger.LogInformation("Cache hit for student Id, AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("Cache miss for student Id, AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
+            }
+        } catch (Exception ex)
+        {
+            _logger.LogWarning("Cache read failed for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
+        }
+
+        //Fallback to database
+        if(studentId == null)
+        {
+            try
+            {
+                var studentData = await _context.Students
+                    .Where(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())
+                    .Select(s => new {s.StudentId})
+                    .FirstOrDefaultAsync();
+                if(studentData == null)
+                {   
+                    return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
+                    {
+                        TotalCount = 0,
+                        Page = dto.Page,
+                        PageSize = dto.PageSize,
+                        Items = new List<GetStudentPaymentNotificationResponseDto>()
+                    };
+                }  
+                    studentId = studentData.StudentId;
+            } catch (TimeoutException tex)
+            {
+                _logger.LogError(tex, "Database timeout while retrieving student for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, tex.GetType().Name, tex.StackTrace);
+                return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
+                {
+                    TotalCount = 0,
+                    Page = dto.Page,
+                    PageSize = dto.PageSize,
+                    Error = OAuthErrorEnum.TemporarilyUnavailable,
+                    Message = "Database timeout while processing request",
+                    Items = new List<GetStudentPaymentNotificationResponseDto>()
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while retrieving student for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
+                return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
+                {
+                    TotalCount = 0,
+                    Page = dto.Page,
+                    PageSize = dto.PageSize,
+                    Error = OAuthErrorEnum.ServerError,
+                    Message = "Unexpected error while processing request",
+                    Items = new List<GetStudentPaymentNotificationResponseDto>()
+                };
+            }
+        }
+        
+        //Query Payments for a student
+        try
+        {
+            var query = _context.PaymentTransactions
+                .Where(pt => pt.StudentId == studentId.Value)
+                .OrderByDescending(pt => pt.CreatedAt);
+            
+            var totalCount = await query.CountAsync();
+
+            var payments = await query
+                .Skip((dto.Page - 1) * dto.PageSize)
+                .Take(dto.PageSize)
+                .Select(pt => new GetStudentPaymentNotificationResponseDto
+                {
+                    Amount = pt.Amount,
+                    BankReference = pt.BankReference,
+                    CreatedAt = pt.CreatedAt,
+                    CurrencyType = pt.CurrencyType,
+                    PaymentChannel = pt.PaymentChannel,
+                    PaymentType = pt.PaymentType,
+                    Status = pt.Status,
+                    InternalReference = pt.InternalReference
+                }).ToListAsync();
+            return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
+            {
+                TotalCount = totalCount,
+                Page = dto.Page,
+                PageSize = dto.PageSize,
+                Items = payments
+            };
+        } catch (TimeoutException tex)
+        {
+            _logger.LogError(tex, "Database timeout while retrieving payments for studentId: {StudentId} Exception: {ExceptionType}, StackTrace: {StackTrace}", studentId, tex.GetType().Name, tex.StackTrace);
+            return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
+            {
+                TotalCount = 0,
+                Page = dto.Page,
+                PageSize = dto.PageSize,
+                Error = OAuthErrorEnum.TemporarilyUnavailable,
+                Message = "Database timeout while processing request",
+                Items = new List<GetStudentPaymentNotificationResponseDto>()
+            };
+        }catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while retrieving payments for studentId: {StudentId} Exception: {ExceptionType}, StackTrace: {StackTrace}", studentId, ex.GetType().Name, ex.StackTrace);
+            return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
+            {
+                TotalCount = 0,
+                Page = dto.Page,
+                PageSize = dto.PageSize,
+                Error = OAuthErrorEnum.ServerError,
+                Message = "Unexpected error while processing request",
+                Items = new List<GetStudentPaymentNotificationResponseDto>()
+            };
+        }
+    }
+}
