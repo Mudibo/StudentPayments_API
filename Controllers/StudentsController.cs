@@ -139,6 +139,73 @@ public class StudentsController : ControllerBase
             });
         }
     }
+    [Authorize(Roles = "Admin")]
+    [HttpGet("dues")]
+    public async Task<IActionResult> GetAllStudentDues([FromQuery] GetStudentsDuesRequestDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new ApiErrorDto
+            {
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = string.Join("; ", errors)
+            });
+        }
+        if (dto.PageSize > 50) dto.PageSize = 50;
+        if(dto.Page < 1) dto.Page = 1;
+
+        try
+        {
+            var result = await _studentDuesService.GetAllStudentDuesAsync(dto);
+            if(result.TotalCount == 0)
+            {
+                return NotFound(new ApiErrorDto
+                {
+                    error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
+                    error_description = "No student dues found."
+                });
+            }
+            if(result.Error == null)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                if (result.Error == OAuthErrorEnum.TemporarilyUnavailable)
+                {
+                    return StatusCode(503, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                        error_description = result.Message
+                    });
+                }else if (result.Error == OAuthErrorEnum.ServerError)
+                {
+                    return StatusCode(500, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                        error_description = result.Message
+                    });
+                }
+                else
+                {
+                    return StatusCode(500, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                        error_description = "An unexpected error occurred while retrieving student dues. Please try again."
+                    });
+                }
+            }
+        } catch (Exception ex)
+        {
+            _logger.LogError(ex, "An unexpected error occurred while retrieving student dues.");
+            return StatusCode(500, new ApiErrorDto
+            {
+                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                error_description = "An unexpected error occurred while retrieving student dues. Please try again later."
+            });
+        }   
+    }
     [Authorize(Policy ="StudentValidation")]
     [HttpPost("validate")]
     //async as the validation service performs asynchronous work (Database Access)
