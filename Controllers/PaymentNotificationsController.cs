@@ -140,7 +140,7 @@ public class PaymentNotificationsController : ControllerBase
                 return NotFound(new ApiErrorDto
                 {
                     error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
-                    error_description = "No payment notifications found for the specified student and."
+                    error_description = "No payment notifications found for student: " + admissionNumber
                 });
             }
         }
