@@ -11,6 +11,7 @@ namespace StudentPayments_API.Models.Enums
         UnsupportedGrantType,
         Inactive,
         Conflict,
-        InvalidRequest
+        InvalidRequest,
+        Unauthorized
     }
 }
