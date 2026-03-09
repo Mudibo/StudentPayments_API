@@ -78,11 +78,61 @@ public class StudentDuesService : IStudentDuesService
         var totalDues = await _context.StudentDues
             .Where(d => d.StudentId == dto.StudentId)
             .SumAsync(d => d.DuesAmount);
-
+    
         var totalPaid = await _context.PaymentTransactions
             .Where(p => p.StudentId == dto.StudentId)
             .SumAsync(p => p.Amount);
-
+    
         return totalDues - totalPaid;
+    }
+    public async Task<PaginatedResultDto<GetStudentsDuesResponseDto>> GetAllStudentDuesAsync(GetStudentsDuesRequestDto dto)
+    {
+        try
+        {
+            var query = _context.StudentDues
+                .Include(sd => sd.Student)
+                .OrderByDescending(sd => sd.CreatedAt);
+            
+            var totalCount = await query.CountAsync();
+
+            var dues = await query  
+                .Skip((dto.Page - 1) * dto.PageSize)
+                .Take(dto.PageSize)
+                .Select(sd => new GetStudentsDuesResponseDto
+                {
+                    AdmissionNumber = sd.Student.AdmissionNumber,
+                    FirstName = sd.Student.FirstName,
+                    LastName = sd.Student.LastName,
+                    DuesType = sd.DuesType,
+                    DuesAmount = sd.DuesAmount,
+                    EffectiveDate = sd.EffectiveDate,
+                    CreatedAt = sd.CreatedAt
+                })
+                .ToListAsync();
+
+                return new PaginatedResultDto<GetStudentsDuesResponseDto>
+                {
+                    TotalCount = totalCount,
+                    Page = dto.Page,
+                    PageSize = dto.PageSize,
+                    Items = dues
+                };
+        }catch(InvalidOperationException ex)
+        {
+            _logger.LogError("Error retrieving Dues. ExceptionType{ExceptionType}, StackTrace {StackTrace}", ex.GetType().Name, ex.StackTrace);
+            return new PaginatedResultDto<GetStudentsDuesResponseDto>
+            {
+                Error = OAuthErrorEnum.TemporarilyUnavailable,
+                Message = "A database error occurred while retrieving student dues. Please try again."
+            };
+        }catch(Exception ex)
+        {
+            _logger.LogError("An unexpected error occurred: ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
+            return new PaginatedResultDto<GetStudentsDuesResponseDto>
+            {
+                Error = OAuthErrorEnum.ServerError,
+                Message = $"An unexpected error occurred while retrieving student dues: {ex.Message}. Please try again."
+            };
+        }
     }
 } 
