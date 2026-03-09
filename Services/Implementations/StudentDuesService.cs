@@ -73,17 +73,59 @@ public class StudentDuesService : IStudentDuesService
             };
         }
     }
-    public async Task<decimal> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto)
+    public async Task<GetStudentBalanceResponseDto> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto)
     {
-        var totalDues = await _context.StudentDues
-            .Where(d => d.StudentId == dto.StudentId)
-            .SumAsync(d => d.DuesAmount);
-    
-        var totalPaid = await _context.PaymentTransactions
-            .Where(p => p.StudentId == dto.StudentId)
-            .SumAsync(p => p.Amount);
-    
-        return totalDues - totalPaid;
+        try
+        {
+            var studentData = await _context.Students
+                .Where(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())
+                .Select(s => new {s.StudentId, s.AdmissionNumber})
+                .FirstOrDefaultAsync();
+            
+            if(studentData == null)
+            {
+                return new GetStudentBalanceResponseDto
+                {
+                    Success = false,
+                    Message = $"No student found with Admission Number: {dto.AdmissionNumber}",
+                    Error = OAuthErrorEnum.NotFound.ToOAuthErrorString()
+                };
+            }
+
+            var totalDues = await _context.StudentDues
+                .Where(sd => sd.StudentId == studentData.StudentId)
+                .SumAsync(sd => (decimal?)sd.DuesAmount) ?? 0m;
+
+            var totalPaid = await _context.PaymentTransactions
+                .Where(p => p.StudentId == studentData.StudentId)
+                .SumAsync(P => (decimal?)P.Amount) ?? 0m;
+            
+            return new GetStudentBalanceResponseDto {
+                AdmissionNumber = studentData.AdmissionNumber,
+                TotalDues = totalDues,
+                TotalPaid = totalPaid,
+                Balance = totalDues - totalPaid,
+                Success = true,
+                Message = "Balance retrieved successfully." 
+            };
+        }catch( DbUpdateException dbEx){
+            _logger.LogError("Database error occurred while retrieving student balance for Admission Number: {admissionNumber}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, dbEx.GetType().Name, dbEx.StackTrace);
+            return new GetStudentBalanceResponseDto
+            {
+                Success = false,
+                Message = "A database error occurred while retrieving student balance. Please try again.",
+                Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()
+            };
+        }catch(Exception ex)
+        {
+            _logger.LogError("Unexpected error occurred. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
+            return new GetStudentBalanceResponseDto
+            {
+                Success = false,
+                Message = "An Unexpected error occurred.",
+                Error = OAuthErrorEnum.ServerError.ToOAuthErrorString()
+            };
+        }
     }
     public async Task<PaginatedResultDto<GetStudentsDuesResponseDto>> GetAllStudentDuesAsync(GetStudentsDuesRequestDto dto)
     {

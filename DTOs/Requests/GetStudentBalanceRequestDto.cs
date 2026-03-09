@@ -1,6 +1,8 @@
 namespace StudentPayments_API.DTOs.Requests;
+using System.ComponentModel.DataAnnotations;
 
 public class GetStudentBalanceRequestDto
 {
-    public int StudentId {get; set;}
+    [Required]
+    public string AdmissionNumber {get; set;}
 }

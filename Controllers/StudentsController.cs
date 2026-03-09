@@ -139,6 +139,63 @@ public class StudentsController : ControllerBase
             });
         }
     }
+    [Authorize(Policy = "StudentValidation")]
+    [HttpGet("{admissionNumber}/balance")]
+    public async Task<IActionResult> GetStudentBalance([FromQuery] string admissionNumber)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new ApiErrorDto
+            {
+                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
+                error_description = string.Join("; ", errors)
+            });
+        }
+        try
+        {
+            var dto = new GetStudentBalanceRequestDto {
+                AdmissionNumber = admissionNumber
+            };
+            var result = await _studentDuesService.GetStudentBalanceAsync(dto);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                if (result.Error == OAuthErrorEnum.NotFound.ToOAuthErrorString())
+                {
+                    return NotFound(new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
+                        error_description = result.Message
+                    });
+                }else if(result.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                {
+                    return StatusCode(503, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
+                        error_description = result.Message
+                    });
+                }else{
+                    return StatusCode(500, new ApiErrorDto
+                    {
+                        error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                        error_description = result.Message
+                    });
+                }
+            }
+        }catch(Exception ex)
+        {
+            _logger.LogError(ex, "An unexpected error occurred while retrieving student balance.");
+            return StatusCode(500, new ApiErrorDto
+            {
+                error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
+                error_description = "An unexpected error occurred while retrieving student balance. Please try again later."
+            });
+        }
+    }
     [Authorize(Roles = "Admin")]
     [HttpGet("dues")]
     public async Task<IActionResult> GetAllStudentDues([FromQuery] GetStudentsDuesRequestDto dto)
