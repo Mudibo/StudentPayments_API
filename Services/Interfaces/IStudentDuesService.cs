@@ -8,6 +8,6 @@ namespace StudentPayments_API.Services.Interfaces;
 public interface IStudentDuesService
 {
     Task<AddStudentDuesResponseDto> AddDuesAsync(AddStudentDuesDto dto);
-    Task<decimal> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto);
     Task<PaginatedResultDto<GetStudentsDuesResponseDto>> GetAllStudentDuesAsync(GetStudentsDuesRequestDto dto);
-}
+    Task<GetStudentBalanceResponseDto> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto);
+} 
