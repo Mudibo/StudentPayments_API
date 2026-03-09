@@ -16,6 +16,7 @@ namespace StudentPayments_API.Models.Enums
                 OAuthErrorEnum.UnsupportedGrantType => "unsupported_grant_type",
                 OAuthErrorEnum.InvalidRequest => "invalid_request",
                 OAuthErrorEnum.Inactive => "inactive",
+                OAuthErrorEnum.Unauthorized => "unauthorized",
                 _ => null
             };
         }
