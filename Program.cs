@@ -82,6 +82,14 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<StudentPayments_API.Swagger.IdempotencyKeyHeaderOperationFilter>();
     // Register BasicAuthOperationFilter for OAuth token endpoint
     options.OperationFilter<StudentPayments_API.Swagger.BasicAuthOperationFilter>();
+
+    // Include XML comments for Swagger documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
 });
 
 
