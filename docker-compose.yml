@@ -1,0 +1,58 @@
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - studentpayments-api
+
+  studentpayments-api:
+    build: .
+    expose:
+      - "8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
+      - Jwt__Secret=${Jwt__Secret}
+      - Jwt__Issuer=${Jwt__Issuer}
+      - Jwt__Audience=${Jwt__Audience}
+      - Jwt__TokenLifetimeMinutes=${Jwt__TokenLifetimeMinutes}
+      - ConnectionStrings__Redis=${ConnectionStrings__Redis}
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:7"
+    ports:
+      - "6379:6379"
+    restart: always
+  
+  postgres:
+    image: "postgres:15"
+    environment:
+      POSTGRES_USER: studentpaymentsapi
+      POSTGRES_PASSWORD: studentpaymentsapi
+      POSTGRES_DB: studentpaymentsapi
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    
+  pgadmin:
+    image: "dpage/pgadmin4"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: seankadida@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: seankadida
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+volumes:
+  pgdata:
+  pgadmin_data:
