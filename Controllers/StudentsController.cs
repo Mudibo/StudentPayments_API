@@ -141,7 +141,7 @@ public class StudentsController : ControllerBase
     }
     [Authorize(Policy = "StudentValidation")]
     [HttpGet("{admissionNumber}/balance")]
-    public async Task<IActionResult> GetStudentBalance([FromQuery] string admissionNumber)
+    public async Task<IActionResult> GetStudentBalance([FromRoute] string admissionNumber)
     {
         if (!ModelState.IsValid)
         {
