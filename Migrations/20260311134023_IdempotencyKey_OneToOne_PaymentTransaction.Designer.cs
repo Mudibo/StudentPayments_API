@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StudentPayments_API.Data;
@@ -12,9 +13,11 @@ using StudentPayments_API.Models.Enums;
 namespace StudentPayments_API.Migrations
 {
     [DbContext(typeof(StudentPaymentsDbContext))]
-    partial class StudentPaymentsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260311134023_IdempotencyKey_OneToOne_PaymentTransaction")]
+    partial class IdempotencyKey_OneToOne_PaymentTransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

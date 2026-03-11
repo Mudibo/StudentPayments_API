@@ -18,5 +18,5 @@ public class IdempotencyKey
     public IdempotencyResourceTypeEnum ResourceType {get;set;}
     public DateTime CreatedAt {get;set;}
     public BankClient BankClient {get;set;}
-    public ICollection<PaymentTransaction> PaymentTransactions {get;set;}
+    public PaymentTransaction PaymentTransaction {get;set;}
 }

@@ -80,9 +80,10 @@ public class StudentPaymentsDbContext : DbContext
             .HasIndex(ik => new {ik.BankClientId, ik.Key})
             .IsUnique();
         modelBuilder.Entity<IdempotencyKey>()
-            .HasMany(ik => ik.PaymentTransactions)
+            .HasOne(ik => ik.PaymentTransaction)
             .WithOne(pt => pt.IdempotencyKey)
-            .HasForeignKey(pt => pt.IdempotencyKeyId);
+            .HasForeignKey<PaymentTransaction>(pt => pt.IdempotencyKeyId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         //PaymentTransaction
         modelBuilder.Entity<PaymentTransaction>()
@@ -92,6 +93,9 @@ public class StudentPaymentsDbContext : DbContext
             .IsUnique();
         modelBuilder.Entity<PaymentTransaction>()
             .HasIndex(pt => pt.InternalReference)
+            .IsUnique();
+        modelBuilder.Entity<PaymentTransaction>()
+            .HasIndex(pt => pt.IdempotencyKeyId)
             .IsUnique();
         modelBuilder.Entity<PaymentTransaction>()
             .ToTable(t => t.HasCheckConstraint("CK_PaymentTransaction_Amount", "\"Amount\" > 0"));
