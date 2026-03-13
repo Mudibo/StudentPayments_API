@@ -8,7 +8,9 @@ using StudentPayments_API.Services.Interfaces;
 
 namespace StudentPayments_API.Controllers;
 
-//Controller to receive request, delegate logic to service, and return valid HTTP response.
+///<summary>
+/// Handles student registration, adding of student dues, student validation and retrieval
+///</summary>
 [ApiController]
 [Route("api/students")]
 public class StudentsController : ControllerBase
@@ -28,7 +30,18 @@ public class StudentsController : ControllerBase
         _studentService = studentService;
         _logger = logger;
     }
+    /// <summary>
+    /// Register a new student.
+    /// </summary>
+    /// <param name="dto">Student registration data</param>
+    /// <response code="400">Bad Request</response>
+    /// <response code="409">Student already exists.</response>
+    /// <response code="500">Server error.</response>
     [HttpPost]
+    [ProducesResponseType(typeof(ApiErrorDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorDto), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiErrorDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> RegisterStudent([FromBody] StudentRegistrationDto dto)
     {
         if (!ModelState.IsValid)
