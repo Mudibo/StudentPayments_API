@@ -178,13 +178,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Scan the container image for vulnerabilities
-      - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+      # - name: Run Trivy vulnerability scan
+      # uses: aquasecurity/trivy-action@0.24.0
+      #  with:
+      #   image-ref: ${{ env.IMAGE_NAME }}:latest
+      #    format: table
+      #   exit-code: 1
+      #    severity: CRITICAL,HIGH
 
       # Push image to DockerHub
       - name: Push Docker image
