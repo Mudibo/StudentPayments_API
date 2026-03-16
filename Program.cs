@@ -178,6 +178,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 
+builder.Services.AddHealthChecks();
 var app = builder.Build();
 
 // Trust forwarded headers from nginx
@@ -192,6 +193,7 @@ app.UseAuthentication();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
