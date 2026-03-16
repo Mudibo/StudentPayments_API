@@ -5,7 +5,16 @@
 
 
 .env
+# Kubernetes secrets
+k8s/secrets/*
 
+# Kubernetes config
+.kube/
+kubeconfig
+
+# Docker
+*.tar
+docker-compose.override.yml
 
 # User-specific files
 *.rsuser
