@@ -38,7 +38,7 @@ public class BankClientService : IBankClientService
                     Error = OAuthErrorEnum.Conflict.ToOAuthErrorString(),
                     Message = "A bank client with the same Client ID already exists."
                 };
-            } 
+            }
             var secretHash = BCrypt.Net.BCrypt.HashPassword(dto.ClientSecret.Trim());
             var bankClient = new BankClient
             {
@@ -61,7 +61,7 @@ public class BankClientService : IBankClientService
             };
 
         }
-        catch(DbUpdateException dbEx)
+        catch (DbUpdateException dbEx)
         {
             _logger.LogError("Database error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.BankName.Trim(), dbEx.GetType().FullName, dbEx.StackTrace);
             return new AddBankClientResponseDto
@@ -72,8 +72,8 @@ public class BankClientService : IBankClientService
                 BankName = null,
                 IsActive = false
             };
-        } 
-        catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError("Unexpected error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.BankName.Trim(), ex.GetType().FullName, ex.StackTrace);
             return new AddBankClientResponseDto
@@ -84,10 +84,11 @@ public class BankClientService : IBankClientService
                 BankName = null,
                 IsActive = false
             };
-        }     
         }
-        
-        public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto){
+    }
+
+    public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto)
+    {
         var cacheKey = $"oauth:{dto.ClientId.Trim()}:{dto.Scope?.Trim()}";
         var clientIdToBankClientIdKey = $"oauth:clientid-to-bankclientid:{dto.ClientId.Trim()}";
         try
@@ -104,11 +105,13 @@ public class BankClientService : IBankClientService
                     expires_in = cachedToken.ExpiresIn,
                     scope = cachedToken.Scope
                 };
-            }else
+            }
+            else
             {
                 _logger.LogInformation("OAuth token cache miss for ClientId: {ClientId} with Scope: {Scope}", dto.ClientId.Trim(), dto.Scope);
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Cache read failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
         }
@@ -121,7 +124,8 @@ public class BankClientService : IBankClientService
                 throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
             bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), client.ClientSecretHash);
-            if (!isSecretValid){
+            if (!isSecretValid)
+            {
                 _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", dto.ClientId.Trim());
                 throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
@@ -171,16 +175,19 @@ public class BankClientService : IBankClientService
                         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
                     }
                 );
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Cache write failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
             }
-        return tokenResponse;
-        }catch(NpgsqlException npgEx)when(npgEx.IsTransient)
+            return tokenResponse;
+        }
+        catch (NpgsqlException npgEx) when (npgEx.IsTransient)
         {
             _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
             throw new OAuthException(OAuthErrorEnum.TemporarilyUnavailable, "Database error occurred. Please try again.");
-        }catch(InvalidOperationException invOpEx) when (invOpEx.InnerException is NpgsqlException npgEx && npgEx.IsTransient)
+        }
+        catch (InvalidOperationException invOpEx) when (invOpEx.InnerException is NpgsqlException npgEx && npgEx.IsTransient)
         {
             _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), invOpEx.GetType().FullName, invOpEx.StackTrace);
             throw new OAuthException(OAuthErrorEnum.TemporarilyUnavailable, "Database error occurred. Please try again.");
@@ -189,10 +196,10 @@ public class BankClientService : IBankClientService
         {
             throw;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", dto.ClientId.Trim());
             throw new OAuthException(OAuthErrorEnum.ServerError, "Server error");
         }
-    }}
- 
+    }
+}

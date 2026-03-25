@@ -36,21 +36,23 @@ public class PaymentNotificationService : IPaymentNotificationService
             if (!string.IsNullOrEmpty(cached) && int.TryParse(cached, out var cachedId))
             {
                 bankClientId = cachedId;
-                _logger.LogInformation("Cache hit for clientId: {ClientId}, bankClientId: {BankClientId}", clientId, bankClientId);                
-            } else
-            {
-                _logger.LogInformation("Cache miss for clientId: {ClientId}", clientId);         
+                _logger.LogInformation("Cache hit for clientId: {ClientId}, bankClientId: {BankClientId}", clientId, bankClientId);
             }
-        }catch(Exception ex)
+            else
+            {
+                _logger.LogInformation("Cache miss for clientId: {ClientId}", clientId);
+            }
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error accessing cache for clientId: {ClientId} Exception: {ExceptionType}, StackTrace: {StackTrace}", clientId, ex.GetType().Name, ex.StackTrace);
         }
 
         //Fallback to DB if not found in the cache
-        if(bankClientId == null)
+        if (bankClientId == null)
         {
             var bankClient = await _context.BankClients.FirstOrDefaultAsync(b => b.ClientId == clientId);
-            if(bankClient == null)
+            if (bankClient == null)
             {
                 _logger.LogWarning("Bank Client not found for client_id; {ClientId}", clientId);
                 return new PaymentNotificationResponseDto
@@ -88,24 +90,26 @@ public class PaymentNotificationService : IPaymentNotificationService
             if (!string.IsNullOrEmpty(cachedStudent))
             {
                 var cachedValidation = System.Text.Json.JsonSerializer.Deserialize<StudentValidationResponseDto>(cachedStudent);
-                if(cachedValidation != null && cachedValidation.Status == StudentValidationStatus.Valid)
+                if (cachedValidation != null && cachedValidation.Status == StudentValidationStatus.Valid)
                 {
                     studentId = cachedValidation.StudentId;
                     _logger.LogInformation("Cache hit for student Id, AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
                 }
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogWarning(ex, "Cache read failed for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
         }
-        if(studentId == null)
+        if (studentId == null)
         {
             var studentData = await _context.Students
                 .Where(k => k.AdmissionNumber == dto.AdmissionNumber.Trim())
-                .Select(s => new {
+                .Select(s => new
+                {
                     s.StudentId
                 }).FirstOrDefaultAsync();
-            if(studentData == null)
+            if (studentData == null)
             {
                 _logger.LogWarning("Student not found for AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
                 return new PaymentNotificationResponseDto
@@ -136,12 +140,12 @@ public class PaymentNotificationService : IPaymentNotificationService
                 var existingKey = await _context.IdempotencyKeys.FirstOrDefaultAsync(
                     k => k.BankClientId == bankClientId && k.Key == idempotencyKey
                 );
-                if(existingKey != null)
+                if (existingKey != null)
                 {
-                    if(existingKey.RequestHash == requestHash)
+                    if (existingKey.RequestHash == requestHash)
                     {
                         var existingTx = await _context.PaymentTransactions.FirstOrDefaultAsync(t => t.IdempotencyKeyId == existingKey.Id);
-                        if(existingTx != null)
+                        if (existingTx != null)
                         {
                             _logger.LogInformation("Idempotent request matched for clientId: {ClientId}, idempotencyKey: {IdempotencyKey}", clientId, idempotencyKey);
                             return new PaymentNotificationResponseDto
@@ -222,7 +226,7 @@ public class PaymentNotificationService : IPaymentNotificationService
                 _context.PaymentTransactions.Add(paymentTx);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Committing transaction for clientId: {ClientId}, idempotencyKey: {IdempotencyKey}", clientId, idempotencyKey);
-                await  transaction.CommitAsync();
+                await transaction.CommitAsync();
 
                 return new PaymentNotificationResponseDto
                 {
@@ -231,8 +235,9 @@ public class PaymentNotificationService : IPaymentNotificationService
                     TransactionUuid = paymentTx.InternalReference,
                     Status = paymentTx.Status.ToString()
                 };
-                
-            }catch(DbUpdateException dbEx)
+
+            }
+            catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "Database error while processing idempotency key for clientId: {ClientId}, idempotencyKey: {IdempotencyKey} Exception: {ExceptionType}, StackTrace: {StackTrace}", clientId, idempotencyKey, dbEx.GetType().Name, dbEx.StackTrace);
                 return new PaymentNotificationResponseDto
@@ -244,7 +249,7 @@ public class PaymentNotificationService : IPaymentNotificationService
                     Status = null
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while processing payment notification for clientId: {ClientId}, idempotencyKey: {IdempotencyKey} Exception: {ExceptionType}, StackTrace: {StackTrace}", clientId, idempotencyKey, ex.GetType().Name, ex.StackTrace);
                 return new PaymentNotificationResponseDto
@@ -268,7 +273,7 @@ public class PaymentNotificationService : IPaymentNotificationService
             if (!string.IsNullOrEmpty(cachedStudent))
             {
                 var cachedValidation = System.Text.Json.JsonSerializer.Deserialize<StudentValidationResponseDto>(cachedStudent);
-                if(cachedValidation != null && cachedValidation.Status == StudentValidationStatus.Valid)
+                if (cachedValidation != null && cachedValidation.Status == StudentValidationStatus.Valid)
                 {
                     studentId = cachedValidation.StudentId;
                     _logger.LogInformation("Cache hit for student Id, AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
@@ -278,22 +283,23 @@ public class PaymentNotificationService : IPaymentNotificationService
             {
                 _logger.LogInformation("Cache miss for student Id, AdmissionNumber: {AdmissionNumber}", dto.AdmissionNumber);
             }
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogWarning("Cache read failed for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
         }
 
         //Fallback to database
-        if(studentId == null)
+        if (studentId == null)
         {
             try
             {
                 var studentData = await _context.Students
                     .Where(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())
-                    .Select(s => new {s.StudentId})
+                    .Select(s => new { s.StudentId })
                     .FirstOrDefaultAsync();
-                if(studentData == null)
-                {   
+                if (studentData == null)
+                {
                     return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
                     {
                         TotalCount = 0,
@@ -301,9 +307,10 @@ public class PaymentNotificationService : IPaymentNotificationService
                         PageSize = dto.PageSize,
                         Items = new List<GetStudentPaymentNotificationResponseDto>()
                     };
-                }  
-                    studentId = studentData.StudentId;
-            } catch (TimeoutException tex)
+                }
+                studentId = studentData.StudentId;
+            }
+            catch (TimeoutException tex)
             {
                 _logger.LogError(tex, "Database timeout while retrieving student for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, tex.GetType().Name, tex.StackTrace);
                 return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
@@ -316,7 +323,7 @@ public class PaymentNotificationService : IPaymentNotificationService
                     Items = new List<GetStudentPaymentNotificationResponseDto>()
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while retrieving student for Admission Number: {AdmissionNumber} Exception: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
                 return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
@@ -330,14 +337,14 @@ public class PaymentNotificationService : IPaymentNotificationService
                 };
             }
         }
-        
+
         //Query Payments for a student
         try
         {
             var query = _context.PaymentTransactions
                 .Where(pt => pt.StudentId == studentId.Value)
                 .OrderByDescending(pt => pt.CreatedAt);
-            
+
             var totalCount = await query.CountAsync();
 
             var payments = await query
@@ -361,7 +368,8 @@ public class PaymentNotificationService : IPaymentNotificationService
                 PageSize = dto.PageSize,
                 Items = payments
             };
-        } catch (TimeoutException tex)
+        }
+        catch (TimeoutException tex)
         {
             _logger.LogError(tex, "Database timeout while retrieving payments for studentId: {StudentId} Exception: {ExceptionType}, StackTrace: {StackTrace}", studentId, tex.GetType().Name, tex.StackTrace);
             return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>
@@ -373,7 +381,8 @@ public class PaymentNotificationService : IPaymentNotificationService
                 Message = "Database timeout while processing request",
                 Items = new List<GetStudentPaymentNotificationResponseDto>()
             };
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while retrieving payments for studentId: {StudentId} Exception: {ExceptionType}, StackTrace: {StackTrace}", studentId, ex.GetType().Name, ex.StackTrace);
             return new PaginatedResultDto<GetStudentPaymentNotificationResponseDto>

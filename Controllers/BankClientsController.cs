@@ -18,11 +18,11 @@ public class BankClientsController : ControllerBase
         _bankClientService = bankClientService;
         _logger = logger;
     }
-    [Authorize(Roles ="Admin")] //Only users with the "Admin" role can access this endpoint
+    [Authorize(Roles = "Admin")] //Only users with the "Admin" role can access this endpoint
     [HttpPost]
     public async Task<IActionResult> AddBankClient([FromBody] CreateBankClientDto dto)
     {
-        if(!ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
             return BadRequest(new ApiErrorDto
             {
@@ -35,7 +35,7 @@ public class BankClientsController : ControllerBase
             var response = await _bankClientService.CreateBankClientAsync(dto);
             if (!response.Success)
             {
-                if(response.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString())
+                if (response.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString())
                 {
                     return Conflict(new ApiErrorDto
                     {
@@ -43,7 +43,7 @@ public class BankClientsController : ControllerBase
                         error_description = response.Message
                     });
                 }
-                else if(response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                else if (response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
                 {
                     return StatusCode(503, new ApiErrorDto
                     {
@@ -61,7 +61,8 @@ public class BankClientsController : ControllerBase
                 }
             }
             return Ok(response);
-        }catch(Exception)
+        }
+        catch (Exception)
         {
             return StatusCode(500, new ApiErrorDto
             {

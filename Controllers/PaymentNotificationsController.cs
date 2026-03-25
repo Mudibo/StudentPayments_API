@@ -28,7 +28,7 @@ public class PaymentNotificationsController : ControllerBase
         [FromHeader(Name = "Idempotency-Key")] string idempotencyKey
     )
     {
-        if(!ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(new ApiErrorDto
@@ -62,16 +62,20 @@ public class PaymentNotificationsController : ControllerBase
             if (result.Success)
             {
                 return Ok(result);
-            }else if(result.Error == OAuthErrorEnum.NotFound.ToOAuthErrorString())
+            }
+            else if (result.Error == OAuthErrorEnum.NotFound.ToOAuthErrorString())
             {
                 return NotFound(result);
-            }else if(result.Error == OAuthErrorEnum.InvalidClient.ToOAuthErrorString())
+            }
+            else if (result.Error == OAuthErrorEnum.InvalidClient.ToOAuthErrorString())
             {
                 return Unauthorized(result);
-            }else if(result.Error == OAuthErrorEnum.Unauthorized.ToOAuthErrorString())
+            }
+            else if (result.Error == OAuthErrorEnum.Unauthorized.ToOAuthErrorString())
             {
                 return Unauthorized(result);
-            }else if(result.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString())
+            }
+            else if (result.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString())
             {
                 return Conflict(result);
             }
@@ -79,7 +83,8 @@ public class PaymentNotificationsController : ControllerBase
             {
                 return StatusCode(500, result);
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing payment notification.");
             return StatusCode(500, new
@@ -97,7 +102,7 @@ public class PaymentNotificationsController : ControllerBase
         [FromQuery] int pageSize
     )
     {
-        if(!ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(new ApiErrorDto
@@ -117,10 +122,10 @@ public class PaymentNotificationsController : ControllerBase
                 error_description = "The token provided is not valid"
             });
         }
-        
+
         //Enforce max page size
         if (pageSize > 20) pageSize = 20;
-        if(page < 1) page = 1;
+        if (page < 1) page = 1;
 
         var dto = new GetStudentPaymentsRequestDto
         {
@@ -144,7 +149,7 @@ public class PaymentNotificationsController : ControllerBase
                 });
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving student payments. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
             return StatusCode(500, new ApiErrorDto

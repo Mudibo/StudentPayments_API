@@ -44,7 +44,7 @@ public class TokenService : ITokenService
         {
             Token = tokenHandler.WriteToken(token),
             Expiration = expires,
-            Role = student.Role                    
+            Role = student.Role
         };
     }
     //Generate token for bank clients

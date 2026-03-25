@@ -6,15 +6,15 @@ namespace StudentPayments_API.DTOs.Requests;
 public class AddStudentDuesDto
 {
     [Required]
-    public string AdmissionNumber {get;set;}
+    public string AdmissionNumber { get; set; }
 
     [Required]
-    public decimal DuesAmount {get;set;}
-    
+    public decimal DuesAmount { get; set; }
+
     [Required]
-    public DateTime EffectiveDate {get;set;}
+    public DateTime EffectiveDate { get; set; }
 
     [Required]
     [EnumDataType(typeof(DuesTypeEnum))]
-    public DuesTypeEnum DuesType {get;set;}
+    public DuesTypeEnum DuesType { get; set; }
 }

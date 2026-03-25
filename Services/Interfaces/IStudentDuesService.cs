@@ -10,4 +10,4 @@ public interface IStudentDuesService
     Task<AddStudentDuesResponseDto> AddDuesAsync(AddStudentDuesDto dto);
     Task<PaginatedResultDto<GetStudentsDuesResponseDto>> GetAllStudentDuesAsync(GetStudentsDuesRequestDto dto);
     Task<GetStudentBalanceResponseDto> GetStudentBalanceAsync(GetStudentBalanceRequestDto dto);
-} 
+}

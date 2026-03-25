@@ -4,5 +4,5 @@ using System.ComponentModel.DataAnnotations;
 public class GetStudentBalanceRequestDto
 {
     [Required]
-    public string AdmissionNumber {get; set;}
+    public string AdmissionNumber { get; set; }
 }

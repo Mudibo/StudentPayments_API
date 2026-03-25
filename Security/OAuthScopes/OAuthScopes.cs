@@ -4,5 +4,5 @@ namespace StudentPayments_API.Security.OAuthScopes;
 public static class OAuthScopes
 {
     public const string StudentValidate = "student.validate";
-    public static readonly string[] All = {StudentValidate};
+    public static readonly string[] All = { StudentValidate };
 }

@@ -37,7 +37,8 @@ public class StudentRegistrationService : IStudentRegistrationService
         try
         {
             //Check for duplicate admission number
-            if(await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim())){
+            if (await _context.Students.AnyAsync(s => s.AdmissionNumber == dto.AdmissionNumber.Trim()))
+            {
                 _logger.LogWarning("Attempting to register a student with a duplicate admission number: {AdmissionNumber}", dto.AdmissionNumber);
                 return new StudentRegistrationResponseDto
                 {
@@ -46,17 +47,21 @@ public class StudentRegistrationService : IStudentRegistrationService
                     Error = OAuthErrorEnum.Conflict.ToOAuthErrorString()
                 };
             }
-            if(!EnumParse.TryParseEnumMember<ProgramEnum>(dto.Program, out var programEnum)){
+            if (!EnumParse.TryParseEnumMember<ProgramEnum>(dto.Program, out var programEnum))
+            {
                 _logger.LogWarning("Invalid Program Value: {program}", dto.Program);
-                return new StudentRegistrationResponseDto {
+                return new StudentRegistrationResponseDto
+                {
                     Success = false,
                     Message = "Invalid Program value.",
                     Error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString()
                 };
             }
-            if(!EnumParse.TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum)){
+            if (!EnumParse.TryParseEnumMember<EnrollmentStatusEnum>(dto.EnrollmentStatus, out var enrollmentStatusEnum))
+            {
                 _logger.LogWarning("Invalid Enrollment Status Value: {enrollmentStatus}", dto.EnrollmentStatus);
-                return new StudentRegistrationResponseDto {
+                return new StudentRegistrationResponseDto
+                {
                     Success = false,
                     Message = "Invalid Enrollment Status value.",
                     Error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString()
@@ -65,7 +70,7 @@ public class StudentRegistrationService : IStudentRegistrationService
             var trimmedPassword = dto.Password.Trim();
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(trimmedPassword);
 
-            var student = new Student 
+            var student = new Student
             {
                 AdmissionNumber = dto.AdmissionNumber.Trim(),
                 FirstName = dto.FirstName.Trim(),
@@ -79,10 +84,13 @@ public class StudentRegistrationService : IStudentRegistrationService
                 UpdatedAt = DateTime.UtcNow,
                 Role = "Student"
             };
-            try{
+            try
+            {
                 _context.Students.Add(student);
                 await _context.SaveChangesAsync();
-            }catch(DbUpdateException dbEx){
+            }
+            catch (DbUpdateException dbEx)
+            {
                 _logger.LogError("A database Error occurred while tring to register Admission Number: {Admission Number}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", student.AdmissionNumber, dbEx.GetType().Name, dbEx.StackTrace);
                 return new StudentRegistrationResponseDto
                 {
@@ -90,7 +98,8 @@ public class StudentRegistrationService : IStudentRegistrationService
                     Message = "A database error occurred while trying to register the student.",
                     Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()
                 };
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError("An unexpected error occurred while trying to register Admission Number: {Admission Number}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", student.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
                 return new StudentRegistrationResponseDto
@@ -106,7 +115,8 @@ public class StudentRegistrationService : IStudentRegistrationService
                 Message = "Student registered successfully.",
                 Error = OAuthErrorEnum.None.ToOAuthErrorString()
             };
-        }catch(DbUpdateException dbEx)
+        }
+        catch (DbUpdateException dbEx)
         {
             _logger.LogError("A database error occurred while trying to register a student. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dbEx.GetType().Name, dbEx.StackTrace);
             return new StudentRegistrationResponseDto
@@ -116,7 +126,7 @@ public class StudentRegistrationService : IStudentRegistrationService
                 Error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError("An unexpected error occurred while trying to register a student. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
             return new StudentRegistrationResponseDto

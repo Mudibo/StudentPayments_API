@@ -31,7 +31,7 @@ public class AuthService : IAuthService
                 .Where(s => s.AdmissionNumber == trimmedAdmissionNumber)
                 .Select(s => new { s.AdmissionNumber, s.PasswordHash, s.Role, s.EnrollmentStatus })
                 .FirstOrDefaultAsync();
-            if(studentData == null)
+            if (studentData == null)
             {
                 _logger.LogWarning("Authentication failed for admission number: {AdmissionNumber}", trimmedAdmissionNumber);
                 return new AuthResponseDto
@@ -40,10 +40,10 @@ public class AuthService : IAuthService
                     access_token = null,
                     token_type = null,
                     error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
-                    expires_in = null       
+                    expires_in = null
                 };
             }
-            if(studentData.EnrollmentStatus == EnrollmentStatusEnum.Inactive)
+            if (studentData.EnrollmentStatus == EnrollmentStatusEnum.Inactive)
             {
                 _logger.LogWarning("Login Failed - Inactive Student: {AdmissionNumber}", trimmedAdmissionNumber);
                 return new AuthResponseDto
@@ -52,10 +52,10 @@ public class AuthService : IAuthService
                     access_token = null,
                     token_type = null,
                     error = OAuthErrorEnum.Inactive.ToOAuthErrorString(),
-                    expires_in = null       
+                    expires_in = null
                 };
             }
-            if(!BCrypt.Net.BCrypt.Verify(trimmedPassword, studentData.PasswordHash))
+            if (!BCrypt.Net.BCrypt.Verify(trimmedPassword, studentData.PasswordHash))
             {
                 _logger.LogWarning("Authentication failed for admission number: {AdmissionNumber} - Incorrect password", trimmedAdmissionNumber);
                 return new AuthResponseDto
@@ -64,7 +64,7 @@ public class AuthService : IAuthService
                     access_token = null,
                     token_type = null,
                     error = OAuthErrorEnum.InvalidClient.ToOAuthErrorString(),
-                    expires_in = null       
+                    expires_in = null
                 };
             }
             var tokenResponse = _tokenService.GenerateToken(new Student
@@ -80,7 +80,8 @@ public class AuthService : IAuthService
                 expires_in = (int)(tokenResponse.Expiration - DateTime.UtcNow).TotalSeconds,
                 role = tokenResponse.Role
             };
-        }catch(DbUpdateException dbEx)
+        }
+        catch (DbUpdateException dbEx)
         {
             _logger.LogError(dbEx, "Database error occurred during authentication for admission number: {AdmissionNumber}", trimmedAdmissionNumber);
             return new AuthResponseDto
@@ -89,9 +90,10 @@ public class AuthService : IAuthService
                 access_token = null,
                 token_type = null,
                 error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
-                expires_in = null       
+                expires_in = null
             };
-        }catch(InvalidOperationException inOps)
+        }
+        catch (InvalidOperationException inOps)
         {
             _logger.LogError("Invalid operation during authentication for admission number: {AdmissionNumber} ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", trimmedAdmissionNumber, inOps.GetType().Name, inOps.StackTrace);
             return new AuthResponseDto
@@ -100,10 +102,10 @@ public class AuthService : IAuthService
                 access_token = null,
                 token_type = null,
                 error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
-                expires_in = null       
+                expires_in = null
             };
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "An unexpected error occurred during authentication for admission number: {AdmissionNumber} ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", trimmedAdmissionNumber, ex.GetType().Name, ex.StackTrace);
             return new AuthResponseDto
@@ -112,7 +114,7 @@ public class AuthService : IAuthService
                 access_token = null,
                 token_type = null,
                 error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
-                expires_in = null       
+                expires_in = null
             };
         }
     }

@@ -7,16 +7,16 @@ namespace StudentPayments_API.Models;
 public class StudentDues
 {
     [Key]
-    public int DueId {get; set;}
+    public int DueId { get; set; }
     [Required]
-    public int StudentId {get;set;}
+    public int StudentId { get; set; }
     [Required]
-    public decimal DuesAmount {get;set;}
+    public decimal DuesAmount { get; set; }
     [Required]
-    public DateTime EffectiveDate {get;set;}
+    public DateTime EffectiveDate { get; set; }
     [Required]
-    public DuesTypeEnum DuesType {get;set;}
-    public DateTime CreatedAt {get;set;}
-    public DateTime UpdatedAt {get;set;}
-    public Student Student {get;set;}
+    public DuesTypeEnum DuesType { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public Student Student { get; set; }
 }

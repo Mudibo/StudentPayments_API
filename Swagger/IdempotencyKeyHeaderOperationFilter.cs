@@ -11,7 +11,7 @@ namespace StudentPayments_API.Swagger
             if (operation.Parameters == null)
                 operation.Parameters = new System.Collections.Generic.List<OpenApiParameter>();
 
-            
+
             if (context.ApiDescription.HttpMethod == "POST" &&
                 (context.ApiDescription.RelativePath.Contains("intent") ||
                  context.ApiDescription.RelativePath.Contains("notification")))

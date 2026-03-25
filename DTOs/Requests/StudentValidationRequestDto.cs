@@ -2,5 +2,5 @@ namespace StudentPayments_API.DTOs.Requests;
 
 public class StudentValidationRequestDto
 {
-    public string AdmissionNumber {get;set;}
+    public string AdmissionNumber { get; set; }
 }
