@@ -199,4 +199,12 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+// --- Automatic EF Core migrations on startup ---
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<StudentPaymentsDbContext>();
+    db.Database.Migrate();
+}
+
 app.Run();

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: studentpayments
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      securityContext:
+        fsGroup: 5050
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          envFrom:
+            - secretRef:
+                name: studentpayments-secrets
+          env:
+            - name: PGADMIN_CONFIG_SERVER_MODE
+              value: "False"
+          volumeMounts:
+            - name: pgadmin-data
+              mountPath: /var/lib/pgadmin
+            - name: pgadmin-servers
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+            # Mount pgpassfile for passwordless login
+            - name: pgadmin-pgpass
+              mountPath: /pgpass/pgpassfile
+              subPath: pgpassfile
+              readOnly: true
+      volumes:
+        - name: pgadmin-data
+          persistentVolumeClaim:
+            claimName: pgadmin-data
+        - name: pgadmin-servers
+          configMap:
+            name: pgadmin-servers
+        # Add volume for pgpassfile
+        - name: pgadmin-pgpass
+          configMap:
+            name: pgadmin-pgpass
+            defaultMode: 0600
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  namespace: studentpayments
+spec:
+  selector:
+    app: pgadmin
+  ports:
+    - protocol: TCP
+      port: 5050
+      targetPort: 80
+  type: NodePort

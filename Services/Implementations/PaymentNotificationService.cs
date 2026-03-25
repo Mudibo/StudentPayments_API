@@ -189,7 +189,21 @@ public class PaymentNotificationService : IPaymentNotificationService
                 _logger.LogInformation("ResourceType value being saved: {ResourceType}", newKey.ResourceType);
                 _context.IdempotencyKeys.Add(newKey);
                 await _context.SaveChangesAsync();
-                
+
+                var existingBankRef = await _context.PaymentTransactions
+                    .FirstOrDefaultAsync(t => t.BankReference == dto.BankReference && t.BankClientId == bankClientId.Value);
+                if (existingBankRef != null)
+                {
+                    _logger.LogWarning("Duplicate bank reference detected for clientId: {ClientId}, bankReference: {BankReference}", clientId, dto.BankReference);
+                    return new PaymentNotificationResponseDto
+                    {
+                        Success = false,
+                        Error = OAuthErrorEnum.Conflict.ToOAuthErrorString(),
+                        Message = "Duplicate bank reference: a transaction with the same bank reference already exists",
+                        TransactionUuid = existingBankRef.InternalReference,
+                        Status = existingBankRef.Status.ToString()
+                    };
+                }
                 //Insert payment transaction
                 var paymentTx = new PaymentTransaction
                 {

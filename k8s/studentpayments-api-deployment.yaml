@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studentpayments-api
+  namespace: studentpayments
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: studentpayments-api
+  template:
+    metadata:
+      labels:
+        app: studentpayments-api
+    spec:
+      containers:
+        - name: studentpayments-api
+          image: docker.io/seanmudibo/studentpaymentsapi:latest
+          env:
+            - name: DOCKERHUB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: studentpayments-secrets
+                  key: DOCKERHUB_USERNAME
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: studentpayments-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: studentpayments-api
+  namespace: studentpayments
+spec:
+  selector:
+    app: studentpayments-api
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

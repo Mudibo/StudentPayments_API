@@ -19,9 +19,9 @@ public class OAuthController : ControllerBase
     }
 
     [HttpPost("token")]
-    public async Task<IActionResult> Token([FromForm] string scope, [FromForm] string grant_type)
+    public async Task<IActionResult> Token([FromBody] OAuthClientAuthRequestDto dto)
     {
-        if(string.IsNullOrEmpty(grant_type) || grant_type!= "client_credentials")
+        if (dto == null || string.IsNullOrEmpty(dto.GrantType) || dto.GrantType != "client_credentials")
         {
             return BadRequest(new OAuthErrorResponseDto
             {
@@ -29,54 +29,14 @@ public class OAuthController : ControllerBase
                 error_description = "The grant_type provided is invalid."
             });
         }
-        
-        //Check if authorization header exists
-        if(!Request.Headers.TryGetValue("Authorization", out var authHeader))
-        {
-            return Unauthorized(new OAuthErrorResponseDto
-            {
-                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
-                error_description = "Authorization header is missing."
-            });
-        }
-        
-        //Ensure header starts with "Basic" 
-        var header = authHeader.ToString();
-        if (!header.StartsWith("Basic"))
-        {
-            return Unauthorized(new OAuthErrorResponseDto
-            {
-                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
-                error_description = "Authorization header provided is invalid."
-            });
-        }
 
-        //Extract and decode client credentials from the header
-        var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(header.Replace("Basic ", ""))).Split(':',2);
-        if (credentials.Length != 2)
-        {
-            return Unauthorized(new OAuthErrorResponseDto
-            {
-                error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
-                error_description = "Authorization header format is invalid."
-            });
-        }
-        var clientId = credentials[0];
-        var clientSecret = credentials[1];
-        var dto = new OAuthClientAuthRequestDto
-        {
-            ClientId = clientId,
-            ClientSecret = clientSecret,
-            Scope = scope,
-            GrantType = grant_type
-        };
-
-        //Authenticate the client using the bank client service
+        // Authenticate the client using the bank client service
         try
         {
             var result = await _bankClientService.AuthenticateOAuthClientAsync(dto);
-                return Ok(result);
-        }catch(OAuthException ex)
+            return Ok(result);
+        }
+        catch (OAuthException ex)
         {
             return ex.Error switch
             {
