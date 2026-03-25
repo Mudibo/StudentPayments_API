@@ -6,29 +6,29 @@ using System.ComponentModel.DataAnnotations;
 public class PaymentTransaction
 {
     [Key]
-    public int TransactionId {get;set;}
+    public int TransactionId { get; set; }
     [Required]
-    public int BankClientId {get;set;}
+    public int BankClientId { get; set; }
     [Required, MaxLength(50)]
-    public string BankReference {get;set;}
+    public string BankReference { get; set; }
     [Required]
-    public decimal Amount {get;set;}
+    public decimal Amount { get; set; }
     [Required]
-    public PaymentTransactionStatusEnum Status {get;set;}
-    public DateTime CreatedAt {get;set;}
+    public PaymentTransactionStatusEnum Status { get; set; }
+    public DateTime CreatedAt { get; set; }
     [Required]
-    public PaymentTypeEnum PaymentType {get;set;}
+    public PaymentTypeEnum PaymentType { get; set; }
     [Required]
-    public PaymentChannelEnum PaymentChannel {get;set;}
+    public PaymentChannelEnum PaymentChannel { get; set; }
     [Required]
-    public int StudentId {get;set;}
+    public int StudentId { get; set; }
     [Required]
-    public Guid InternalReference {get;set;}
+    public Guid InternalReference { get; set; }
     [Required]
-    public CurrencyEnum CurrencyType {get;set;}
+    public CurrencyEnum CurrencyType { get; set; }
     [Required]
-    public int IdempotencyKeyId {get;set;}
-    public BankClient BankClient {get;set;}
-    public Student Student {get;set;}
-    public IdempotencyKey IdempotencyKey {get;set;}
+    public int IdempotencyKeyId { get; set; }
+    public BankClient BankClient { get; set; }
+    public Student Student { get; set; }
+    public IdempotencyKey IdempotencyKey { get; set; }
 }

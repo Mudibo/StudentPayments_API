@@ -20,7 +20,7 @@ public class StudentsController : ControllerBase
     private readonly IStudentValidationService _validationService;
     private readonly IStudentService _studentService;
     private readonly ILogger<StudentsController> _logger;
-    
+
     //Constructor receives an implementation of IStudentRegistrationService via Dependency Injection
     public StudentsController(IStudentRegistrationService registrationService, IStudentDuesService studentDuesService, ILogger<StudentsController> logger, IStudentValidationService validationService, IStudentService studentService)
     {
@@ -54,35 +54,45 @@ public class StudentsController : ControllerBase
                 error_description = "Validation failed: " + string.Join("; ", errors)
             });
         }
-        try 
+        try
         {
             var response = await _registrationService.RegisterStudentAsync(dto);
-            if(response.Success)
+            if (response.Success)
             {
-                return Ok(new {
+                return Ok(new
+                {
                     success = response.Success,
                     message = response.Message,
                 });
-            }else{
-                if(response.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString()){
+            }
+            else
+            {
+                if (response.Error == OAuthErrorEnum.Conflict.ToOAuthErrorString())
+                {
                     return StatusCode(409, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.Conflict.ToOAuthErrorString(),
                         error_description = response.Message
                     });
-                }else if(response.Error == OAuthErrorEnum.InvalidRequest.ToOAuthErrorString()){
+                }
+                else if (response.Error == OAuthErrorEnum.InvalidRequest.ToOAuthErrorString())
+                {
                     return BadRequest(new ApiErrorDto
                     {
                         error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
                         error_description = response.Message
                     });
-                }else if(response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString()){
+                }
+                else if (response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                {
                     return StatusCode(503, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
                         error_description = response.Message
                     });
-                }else{
+                }
+                else
+                {
                     return StatusCode(500, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
@@ -90,7 +100,9 @@ public class StudentsController : ControllerBase
                     });
                 }
             }
-        }catch(Exception ex){
+        }
+        catch (Exception ex)
+        {
             _logger.LogError(ex, "An unexpected error occurred during student registration.");
             return StatusCode(500, new ApiErrorDto
             {
@@ -101,7 +113,7 @@ public class StudentsController : ControllerBase
     }
     [Authorize(Roles = "Admin")]
     [HttpPost("dues")]
-    public async Task<IActionResult>AddStudentDues([FromBody] AddStudentDuesDto dto)
+    public async Task<IActionResult> AddStudentDues([FromBody] AddStudentDuesDto dto)
     {
         if (!ModelState.IsValid)
         {
@@ -120,21 +132,24 @@ public class StudentsController : ControllerBase
             }
             else
             {
-                if(response.Error == OAuthErrorEnum.NotFound.ToOAuthErrorString())
+                if (response.Error == OAuthErrorEnum.NotFound.ToOAuthErrorString())
                 {
                     return NotFound(new ApiErrorDto
                     {
                         error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
                         error_description = response.Message
                     });
-                }else if(response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                }
+                else if (response.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
                 {
                     return StatusCode(503, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
                         error_description = response.Message
                     });
-                }else{
+                }
+                else
+                {
                     return StatusCode(500, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
@@ -142,7 +157,8 @@ public class StudentsController : ControllerBase
                     });
                 }
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "An unexpected error occurred while processing the request.");
             return StatusCode(500, new ApiErrorDto
@@ -167,7 +183,8 @@ public class StudentsController : ControllerBase
         }
         try
         {
-            var dto = new GetStudentBalanceRequestDto {
+            var dto = new GetStudentBalanceRequestDto
+            {
                 AdmissionNumber = admissionNumber
             };
             var result = await _studentDuesService.GetStudentBalanceAsync(dto);
@@ -184,14 +201,17 @@ public class StudentsController : ControllerBase
                         error = OAuthErrorEnum.NotFound.ToOAuthErrorString(),
                         error_description = result.Message
                     });
-                }else if(result.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                }
+                else if (result.Error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
                 {
                     return StatusCode(503, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
                         error_description = result.Message
                     });
-                }else{
+                }
+                else
+                {
                     return StatusCode(500, new ApiErrorDto
                     {
                         error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
@@ -199,7 +219,8 @@ public class StudentsController : ControllerBase
                     });
                 }
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "An unexpected error occurred while retrieving student balance.");
             return StatusCode(500, new ApiErrorDto
@@ -223,12 +244,12 @@ public class StudentsController : ControllerBase
             });
         }
         if (dto.PageSize > 50) dto.PageSize = 50;
-        if(dto.Page < 1) dto.Page = 1;
+        if (dto.Page < 1) dto.Page = 1;
 
         try
         {
             var result = await _studentDuesService.GetAllStudentDuesAsync(dto);
-            if(result.TotalCount == 0)
+            if (result.TotalCount == 0)
             {
                 return NotFound(new ApiErrorDto
                 {
@@ -236,7 +257,7 @@ public class StudentsController : ControllerBase
                     error_description = "No student dues found."
                 });
             }
-            if(result.Error == null)
+            if (result.Error == null)
             {
                 return Ok(result);
             }
@@ -249,7 +270,8 @@ public class StudentsController : ControllerBase
                         error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
                         error_description = result.Message
                     });
-                }else if (result.Error == OAuthErrorEnum.ServerError)
+                }
+                else if (result.Error == OAuthErrorEnum.ServerError)
                 {
                     return StatusCode(500, new ApiErrorDto
                     {
@@ -266,7 +288,8 @@ public class StudentsController : ControllerBase
                     });
                 }
             }
-        } catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "An unexpected error occurred while retrieving student dues.");
             return StatusCode(500, new ApiErrorDto
@@ -274,14 +297,15 @@ public class StudentsController : ControllerBase
                 error = OAuthErrorEnum.ServerError.ToOAuthErrorString(),
                 error_description = "An unexpected error occurred while retrieving student dues. Please try again later."
             });
-        }   
+        }
     }
-    [Authorize(Policy ="StudentValidation")]
+    [Authorize(Policy = "StudentValidation")]
     [HttpPost("validate")]
     //async as the validation service performs asynchronous work (Database Access)
     public async Task<IActionResult> ValidateStudent([FromBody] StudentValidationRequestDto dto)
     {
-        if(string.IsNullOrEmpty(dto.AdmissionNumber)){
+        if (string.IsNullOrEmpty(dto.AdmissionNumber))
+        {
             return BadRequest(new ApiErrorDto
             {
                 error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
@@ -289,27 +313,31 @@ public class StudentsController : ControllerBase
             });
         }
         var response = await _validationService.ValidateStudentAsync(dto);
-        switch(response.Status)
+        switch (response.Status)
         {
             case Models.StudentValidationStatus.Valid:
                 return Ok(response);
             case Models.StudentValidationStatus.NotFound:
-                return NotFound(new ApiErrorDto {
+                return NotFound(new ApiErrorDto
+                {
                     error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
                     error_description = response.Message
                 });
             case Models.StudentValidationStatus.Inactive:
-                return StatusCode(403, new ApiErrorDto {
+                return StatusCode(403, new ApiErrorDto
+                {
                     error = OAuthErrorEnum.Inactive.ToOAuthErrorString(),
                     error_description = response.Message
                 });
             case Models.StudentValidationStatus.TransientError:
-                return StatusCode(503, new ApiErrorDto {
+                return StatusCode(503, new ApiErrorDto
+                {
                     error = OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString(),
                     error_description = response.Message
                 });
             case Models.StudentValidationStatus.Error:
-                return BadRequest(new ApiErrorDto {
+                return BadRequest(new ApiErrorDto
+                {
                     error = OAuthErrorEnum.InvalidRequest.ToOAuthErrorString(),
                     error_description = response.Message
                 });
@@ -325,7 +353,7 @@ public class StudentsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllStudents([FromQuery] GetStudentsRequestDto dto)
     {
-        if(!ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
             return BadRequest(new ApiErrorDto
             {
@@ -335,12 +363,13 @@ public class StudentsController : ControllerBase
         }
         try
         {
-            if(dto.Page < 1) dto.Page = 1;
-            if(dto.PageSize < 1 || dto.PageSize > 200) dto.PageSize = 50;
-            
+            if (dto.Page < 1) dto.Page = 1;
+            if (dto.PageSize < 1 || dto.PageSize > 200) dto.PageSize = 50;
+
             var allStudents = await _studentService.GetStudentsAsync(dto);
             return Ok(allStudents);
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError("An unexpected error occurred while retrieving students. ExceptionType:{ExceptionType}, ExceptionName: {ExceptionName}, StackTrace:{StackTrace}", ex.GetType().Name, ex.Message, ex.StackTrace);
             return StatusCode(500, new ApiErrorDto

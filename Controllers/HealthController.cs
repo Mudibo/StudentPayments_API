@@ -4,6 +4,7 @@ namespace StudentPayments_API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class HealthController : ControllerBase
     {
         [HttpGet]

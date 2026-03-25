@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "studentpayments-db",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "studentpaymentsapi",
+      "Username": "studentpaymentsapi",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass/pgpassfile"
+    }
+  }
+}

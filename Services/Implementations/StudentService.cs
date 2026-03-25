@@ -22,7 +22,7 @@ public class StudentService : IStudentService
     {
         try
         {
-            var query =  _context.Students.AsNoTracking().Where(s => s.Role == Models.Enums.UserRole.Student);
+            var query = _context.Students.AsNoTracking().Where(s => s.Role == Models.Enums.UserRole.Student);
             var totalCount = await query.CountAsync();
             var students = await query
                 .OrderBy(s => s.StudentId)
@@ -30,23 +30,24 @@ public class StudentService : IStudentService
                 .Take(dto.PageSize)
                 .Select(s => new StudentDetailsSummaryResponseDto
                 {
-                   AdmissionNumber = s.AdmissionNumber,
-                   FirstName = s.FirstName,
-                   LastName = s.LastName,
-                   Email = s.Email,
-                   MobileNumber = s.MobileNumber,
-                   Program = s.Program.ToString(),
-                   EnrollmentStatus = s.EnrollmentStatus.ToString()
+                    AdmissionNumber = s.AdmissionNumber,
+                    FirstName = s.FirstName,
+                    LastName = s.LastName,
+                    Email = s.Email,
+                    MobileNumber = s.MobileNumber,
+                    Program = s.Program.ToString(),
+                    EnrollmentStatus = s.EnrollmentStatus.ToString()
                 })
                 .ToListAsync();
             return new PaginatedResultDto<StudentDetailsSummaryResponseDto>
             {
-               TotalCount = totalCount,
-               Page = dto.Page,
-               PageSize = dto.PageSize,
-               Items = students
+                TotalCount = totalCount,
+                Page = dto.Page,
+                PageSize = dto.PageSize,
+                Items = students
             };
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError("Error fetching students ExceptionType:{ExceptionType}, ExceptionName:{ExceptionName}, StackTrace:{StackTrace}", ex.GetType().Name, ex.Message, ex.StackTrace);
             throw;

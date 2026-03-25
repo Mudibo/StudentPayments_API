@@ -13,8 +13,8 @@ using StudentPayments_API.Services.Interfaces;
 using StudentPayments_API.DTOs.Responses;
 namespace StudentPayments_API.Controllers;
 
-[ApiController] 
-[Route("api/auth")] 
+[ApiController]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -28,7 +28,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] AuthRequestDto dto)
     {
-        if(!ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(new ApiErrorDto
@@ -46,7 +46,7 @@ public class AuthController : ControllerBase
             }
             else
             {
-                if(response.error == OAuthErrorEnum.InvalidClient.ToOAuthErrorString())
+                if (response.error == OAuthErrorEnum.InvalidClient.ToOAuthErrorString())
                 {
                     return Unauthorized(new ApiErrorDto
                     {
@@ -54,7 +54,7 @@ public class AuthController : ControllerBase
                         error_description = "Invalid credentials"
                     });
                 }
-                else if(response.error == OAuthErrorEnum.Inactive.ToOAuthErrorString())
+                else if (response.error == OAuthErrorEnum.Inactive.ToOAuthErrorString())
                 {
                     return Unauthorized(new ApiErrorDto
                     {
@@ -62,7 +62,7 @@ public class AuthController : ControllerBase
                         error_description = "Student account is inactive."
                     });
                 }
-                else if(response.error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
+                else if (response.error == OAuthErrorEnum.TemporarilyUnavailable.ToOAuthErrorString())
                 {
                     return StatusCode(503, new ApiErrorDto
                     {
@@ -79,7 +79,8 @@ public class AuthController : ControllerBase
                     });
                 }
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError("An unexpected error occurred during authentication. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", ex.GetType().Name, ex.StackTrace);
             return StatusCode(500, new ApiErrorDto
@@ -89,6 +90,6 @@ public class AuthController : ControllerBase
             });
         }
     }
-    
-        
+
+
 }

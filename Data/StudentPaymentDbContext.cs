@@ -9,14 +9,14 @@ using StudentPayments_API.Models.Enums;
 public class StudentPaymentsDbContext : DbContext
 {
     //Constructor that receives database configuration and pass the options to base DbContext class
-    public StudentPaymentsDbContext(DbContextOptions<StudentPaymentsDbContext> options) 
-    : base(options) {}
-    
+    public StudentPaymentsDbContext(DbContextOptions<StudentPaymentsDbContext> options)
+    : base(options) { }
+
     public DbSet<Student> Students { get; set; } //DbSet<t> represents a table in the database
     public DbSet<StudentDues> StudentDues { get; set; }
     public DbSet<BankClient> BankClients { get; set; }
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
-    public DbSet<IdempotencyKey> IdempotencyKeys {get;set;}
+    public DbSet<IdempotencyKey> IdempotencyKeys { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Enums
@@ -72,24 +72,24 @@ public class StudentPaymentsDbContext : DbContext
             .WithOne(ik => ik.BankClient)
             .HasForeignKey(ik => ik.BankClientId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         //IdempotencyKey
         modelBuilder.Entity<IdempotencyKey>()
             .HasKey(ik => ik.Id);
         modelBuilder.Entity<IdempotencyKey>()
-            .HasIndex(ik => new {ik.BankClientId, ik.Key})
+            .HasIndex(ik => new { ik.BankClientId, ik.Key })
             .IsUnique();
         modelBuilder.Entity<IdempotencyKey>()
             .HasOne(ik => ik.PaymentTransaction)
             .WithOne(pt => pt.IdempotencyKey)
             .HasForeignKey<PaymentTransaction>(pt => pt.IdempotencyKeyId)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         //PaymentTransaction
         modelBuilder.Entity<PaymentTransaction>()
             .HasKey(pt => pt.TransactionId);
         modelBuilder.Entity<PaymentTransaction>()
-            .HasIndex(pt => new {pt.BankClientId, pt.BankReference})
+            .HasIndex(pt => new { pt.BankClientId, pt.BankReference })
             .IsUnique();
         modelBuilder.Entity<PaymentTransaction>()
             .HasIndex(pt => pt.InternalReference)

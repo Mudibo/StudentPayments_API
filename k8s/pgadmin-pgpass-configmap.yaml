@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-pgpass
+  namespace: studentpayments
+data:
+  pgpassfile: |
+    postgres:5432:studentpaymentsapi:studentpaymentsapi:studentpaymentsapi
