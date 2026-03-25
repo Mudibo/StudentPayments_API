@@ -198,7 +198,8 @@ public class PaymentNotificationService : IPaymentNotificationService
                     .FirstOrDefaultAsync(t => t.BankReference == dto.BankReference && t.BankClientId == bankClientId.Value);
                 if (existingBankRef != null)
                 {
-                    _logger.LogWarning("Duplicate bank reference detected for clientId: {ClientId}, bankReference: {BankReference}", clientId, dto.BankReference);
+                    var sanitizedBankReference = dto.BankReference?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+                    _logger.LogWarning("Duplicate bank reference detected for clientId: {ClientId}, bankReference: {BankReference}", clientId, sanitizedBankReference);
                     return new PaymentNotificationResponseDto
                     {
                         Success = false,

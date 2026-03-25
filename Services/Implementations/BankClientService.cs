@@ -51,7 +51,8 @@ public class BankClientService : IBankClientService
             };
             _context.BankClients.Add(bankClient);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Bank client created successfully with BankName: {BankName}", dto.BankName.Trim());
+            var safeBankName = dto.BankName?.Trim().Replace("\r", string.Empty).Replace("\n", string.Empty);
+            _logger.LogInformation("Bank client created successfully with BankName: {BankName}", safeBankName);
             return new AddBankClientResponseDto
             {
                 Success = true,
@@ -63,7 +64,8 @@ public class BankClientService : IBankClientService
         }
         catch (DbUpdateException dbEx)
         {
-            _logger.LogError("Database error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.BankName.Trim(), dbEx.GetType().FullName, dbEx.StackTrace);
+            var safeBankName = dto.BankName?.Trim().Replace("\r", string.Empty).Replace("\n", string.Empty);
+            _logger.LogError("Database error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeBankName, dbEx.GetType().FullName, dbEx.StackTrace);
             return new AddBankClientResponseDto
             {
                 Success = false,
@@ -75,7 +77,8 @@ public class BankClientService : IBankClientService
         }
         catch (Exception ex)
         {
-            _logger.LogError("Unexpected error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.BankName.Trim(), ex.GetType().FullName, ex.StackTrace);
+            var safeBankName = dto.BankName?.Trim().Replace("\r", string.Empty).Replace("\n", string.Empty);
+            _logger.LogError("Unexpected error while creating bank client with BankName: {BankName}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeBankName, ex.GetType().FullName, ex.StackTrace);
             return new AddBankClientResponseDto
             {
                 Success = false,
@@ -89,15 +92,17 @@ public class BankClientService : IBankClientService
 
     public async Task<OAuthTokenResponseDto> AuthenticateOAuthClientAsync(OAuthClientAuthRequestDto dto)
     {
-        var cacheKey = $"oauth:{dto.ClientId.Trim()}:{dto.Scope?.Trim()}";
-        var clientIdToBankClientIdKey = $"oauth:clientid-to-bankclientid:{dto.ClientId.Trim()}";
+        var safeClientId = dto.ClientId?.Trim().Replace("\r", string.Empty).Replace("\n", string.Empty);
+        var safeScope = dto.Scope?.Trim().Replace("\r", string.Empty).Replace("\n", string.Empty);
+        var cacheKey = $"oauth:{safeClientId}:{safeScope}";
+        var clientIdToBankClientIdKey = $"oauth:clientid-to-bankclientid:{safeClientId}";
         try
         {
             var cached = await _cache.GetStringAsync(cacheKey);
             if (!string.IsNullOrEmpty(cached))
             {
                 var cachedToken = JsonConvert.DeserializeObject<CachedOAuthToken>(cached);
-                _logger.LogInformation("OAuth token cache hit for ClientId: {ClientId} with Scope: {Scope}", dto.ClientId.Trim(), dto.Scope);
+                _logger.LogInformation("OAuth token cache hit for ClientId: {ClientId} with Scope: {Scope}", safeClientId, safeScope);
                 return new OAuthTokenResponseDto
                 {
                     access_token = cachedToken.AccessToken,
@@ -108,25 +113,25 @@ public class BankClientService : IBankClientService
             }
             else
             {
-                _logger.LogInformation("OAuth token cache miss for ClientId: {ClientId} with Scope: {Scope}", dto.ClientId.Trim(), dto.Scope);
+                _logger.LogInformation("OAuth token cache miss for ClientId: {ClientId} with Scope: {Scope}", safeClientId, safeScope);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Cache read failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
+            _logger.LogError(ex, "Cache read failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeClientId, safeScope, ex.GetType().FullName, ex.StackTrace);
         }
         try
         {
             var client = await _context.BankClients.FirstOrDefaultAsync(bc => bc.ClientId == dto.ClientId.Trim() && bc.IsActive);
             if (client == null)
             {
-                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - client not found or inactive", dto.ClientId.Trim());
+                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - client not found or inactive", safeClientId);
                 throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
             bool isSecretValid = BCrypt.Net.BCrypt.Verify(dto.ClientSecret.Trim(), client.ClientSecretHash);
             if (!isSecretValid)
             {
-                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", dto.ClientId.Trim());
+                _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid secret", safeClientId);
                 throw new OAuthException(OAuthErrorEnum.InvalidClient, "Invalid Client Credentials.");
             }
             // Validate requested scopes against allowed scopes using OAuthScopeEnum
@@ -137,7 +142,7 @@ public class BankClientService : IBankClientService
             {
                 if (!allowedScopes.Contains(reqScope))
                 {
-                    _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", dto.ClientId.Trim(), reqScope);
+                    _logger.LogWarning("OAuth authentication failed for ClientId: {ClientId} - invalid scope requested: {Scope}", safeClientId, reqScope?.Replace("\r", string.Empty).Replace("\n", string.Empty));
                     throw new OAuthException(OAuthErrorEnum.InvalidScope, $"Invalid scope: {reqScope}");
                 }
             }
@@ -178,18 +183,18 @@ public class BankClientService : IBankClientService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Cache write failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), dto.Scope, ex.GetType().FullName, ex.StackTrace);
+                _logger.LogError(ex, "Cache write failed for OAuth token with ClientId: {ClientId} and Scope: {Scope}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeClientId, safeScope, ex.GetType().FullName, ex.StackTrace);
             }
             return tokenResponse;
         }
         catch (NpgsqlException npgEx) when (npgEx.IsTransient)
         {
-            _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), npgEx.GetType().FullName, npgEx.StackTrace);
+            _logger.LogError(npgEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeClientId, npgEx.GetType().FullName, npgEx.StackTrace);
             throw new OAuthException(OAuthErrorEnum.TemporarilyUnavailable, "Database error occurred. Please try again.");
         }
         catch (InvalidOperationException invOpEx) when (invOpEx.InnerException is NpgsqlException npgEx && npgEx.IsTransient)
         {
-            _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.ClientId.Trim(), invOpEx.GetType().FullName, invOpEx.StackTrace);
+            _logger.LogError(invOpEx, "Database error while authenticating OAuth client with ClientId: {ClientId}. ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeClientId, invOpEx.GetType().FullName, invOpEx.StackTrace);
             throw new OAuthException(OAuthErrorEnum.TemporarilyUnavailable, "Database error occurred. Please try again.");
         }
         catch (OAuthException)
@@ -198,7 +203,7 @@ public class BankClientService : IBankClientService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", dto.ClientId.Trim());
+            _logger.LogError(ex, "Unexpected error while authenticating OAuth client with ClientId: {ClientId}", safeClientId);
             throw new OAuthException(OAuthErrorEnum.ServerError, "Server error");
         }
     }

@@ -66,7 +66,11 @@ public class StudentDuesService : IStudentDuesService
         }
         catch (Exception ex)
         {
-            _logger.LogError("An unexpected error occurred while adding dues for AdmissionNumber: {AdmissionNumber}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", dto.AdmissionNumber, ex.GetType().Name, ex.StackTrace);
+            var safeAdmissionNumber = dto.AdmissionNumber?
+                .Replace(System.Environment.NewLine, string.Empty)
+                .Replace("\n", string.Empty)
+                .Replace("\r", string.Empty);
+            _logger.LogError("An unexpected error occurred while adding dues for AdmissionNumber: {AdmissionNumber}, ExceptionType: {ExceptionType}, StackTrace: {StackTrace}", safeAdmissionNumber, ex.GetType().Name, ex.StackTrace);
             return new AddStudentDuesResponseDto
             {
                 Success = false,
