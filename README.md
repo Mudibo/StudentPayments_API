@@ -67,7 +67,7 @@ This API allows seamless integration between banks and universities for student 
     ```bash
     http://localhost:8080/swagger/index.html
 
-3. In order to access the pgAdmin interface for database management, navigate to:
+3. In order to access the pgAdmin interface for database management, navigate to :
     ```bash
     http://localhost:5050/
 
