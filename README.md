@@ -5,10 +5,10 @@
 - Features
 - Architecture
 - Getting Started
-    - Prerequisites
-    - Setup Instructions
-    - Environment Variables & Configuration
-    - Running the Application
+- Prerequisites
+- Setup Instructions
+- Environment Variables & Configuration
+- Running the Application
 - Authentication
 - Usage Workflow
 - Error handling
