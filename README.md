@@ -1,17 +1,17 @@
 # Student Payments Integration API
 
 ## Table of Contents
-- Project Overview
-- Features
-- Architecture
-- Getting Started
-- Prerequisites
-- Setup Instructions
-- Environment Variables & Configuration
-- Running the Application
-- Authentication
-- Usage Workflow
-- Error handling
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Prerequisites](#prerequisites)
+- [Setup Instructions](#setup-instructions)
+- [Environment Variables & Configuration](#environment-variables--configuration)
+- [Running the Application](#running-the-application)
+- [Authentication](#authentication)
+- [Usage Workflow](#usage-workflow)
+- [Error Handling](#error-handling)
 
 
 ## Project Overview
@@ -30,7 +30,7 @@ This API allows seamless integration between banks and universities for student 
 
 ## Architecture
 - The diagram illustrates the architectural diagram of the application. It provides a high-level overview of the approach to the problem.
-<img src="images/architecture_diagram.png" alt="Architecture Diagram" width="500" height="500>
+<img src="images/architecture_diagram.png" alt="Architecture Diagram" width="500" height="500">
 
 ### Prerequisites
 - Docker desktop installed
@@ -90,6 +90,7 @@ Banks authenticate using their ClientId, ClientSecret, grant_type, and scope to 
 ## Error Handling
 - The API has been designed to gracefully handle errors. The following is a summary of the errors thrown by the API and their corresponding status codes:
 <img src="images/error_handling.png" width="500" height="500" alt="Error Handling">
+
 - A 200 (Success) response status code has been used to depict a successful operation was carried out.
 - A 400 (Bad Request) response has been used to illustrate that the API received an incorrect request format.
 - A 401 (Unauthorized) response depicts that invalid credentials have been submitted and thus the API cannot verify the identity of the client.
