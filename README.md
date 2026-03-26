@@ -1,17 +1,17 @@
 # Student Payments Integration API
 
 ## Table of Contents
-- Project Overview
-- Features
-- Architecture
-- Getting Started
-- Prerequisites
-- Setup Instructions
-- Environment Variables & Configuration
-- Running the Application
-- Authentication
-- Usage Workflow
-- Error handling
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Prerequisites](#prerequisites)
+- [Setup Instructions](#setup-instructions)
+- [Environment Variables & Configuration](#environment-variables--configuration)
+- [Running the Application](#running-the-application)
+- [Authentication](#authentication)
+- [Usage Workflow](#usage-workflow)
+- [Error Handling](#error-handling)
 
 
 ## Project Overview
@@ -30,7 +30,7 @@ This API allows seamless integration between banks and universities for student 
 
 ## Architecture
 - The diagram illustrates the architectural diagram of the application. It provides a high-level overview of the approach to the problem.
-<img src="images/architecture_diagram.png" alt="Architecture Diagram" width="500" height="500>
+<img src="images/architecture_diagram.png" alt="Architecture Diagram" width="500" height="500">
 
 ### Prerequisites
 - Docker desktop installed
