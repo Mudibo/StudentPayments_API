@@ -90,6 +90,7 @@ Banks authenticate using their ClientId, ClientSecret, grant_type, and scope to 
 ## Error Handling
 - The API has been designed to gracefully handle errors. The following is a summary of the errors thrown by the API and their corresponding status codes:
 <img src="images/error_handling.png" width="500" height="500" alt="Error Handling">
+
 - A 200 (Success) response status code has been used to depict a successful operation was carried out.
 - A 400 (Bad Request) response has been used to illustrate that the API received an incorrect request format.
 - A 401 (Unauthorized) response depicts that invalid credentials have been submitted and thus the API cannot verify the identity of the client.
