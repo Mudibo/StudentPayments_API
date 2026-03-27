@@ -71,6 +71,36 @@ This API allows seamless integration between banks and universities for student 
     ```bash
     http://localhost:5050/
 
+4. In order to access the RabbitMQ Management User Interface, navigate to :
+    ```bash
+    http://localhost:15672/
+
+5. Sign in with your credentials defined in your .env file.
+
+6. To connect to the database server, navigate to:
+    ```bash
+    http://localhost:5050/
+
+7. Sign into pgAdmin with your credentials defined in the .env file, i.e
+    ```bash
+    Email: PGADMIN_DEFAULT_EMAIL
+    Password: PGADMIN_DEFAULT_PASSWORD
+
+8. Click on "Add New Server" and create a Server.
+
+9. In the "General" tab:
+    ```bash
+    Name:
+
+10. Go to the connection tab and enter:
+    ```bash
+    Host name/address: postgres
+    Port: 5432
+    Username: POSTGRES_USER
+    Password: POSTGRES_PASSWORD
+
+11. Click "Save", and expand on "Servers" to view the created database.
+
 ## Authentication
 1. Admin Authentication:
 Admins log in to manage bank clients and student dues.
